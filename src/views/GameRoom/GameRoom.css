@@ -1,0 +1,190 @@
+.game-room {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pane {
+  padding: 20px;
+  background-color: #fff;
+  height: 100%;
+  overflow: auto;
+}
+
+.game-room-header-bar {
+  background-color: #f4f4f4;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.problem-header {
+  background-color: white;
+  width: 100px;
+  padding: 10px;
+  text-align: center;
+}
+
+.difficulty-badge {
+  width: 100px;
+  color: white;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 15px;
+  padding: 2px;
+}
+
+.difficulty-badge.easy {
+  background-color: #58b856;
+}
+
+.timer {
+  width: 70px;
+  border: 2px solid black;
+  box-shadow: 4px 4px 0px #000;
+  align-content: center;
+  text-align: center;
+  font-weight: bold;
+}
+
+.game-room-button-container {
+  display: flex;
+}
+
+.game-room-button {
+  padding: 10px;
+  width: 100px;
+  color: white;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 10px;
+  user-select: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-room-run-button {
+  background-color: #9266cc;
+  margin-right: 10px;
+  transition: 0.3s all;
+}
+
+.game-room-run-button:hover {
+  background-color: #a68bc9;
+}
+
+.game-room-submit-button {
+  background-color: #28c244;
+  transition: 0.3s all;
+}
+
+.game-room-submit-button:hover {
+  background-color: #78e28b;
+}
+
+.game-room-button.disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.game-room-button-spinner {
+  border: 4px solid #f3f3f3;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.game-room-button-spinner.run-spinner {
+  border-top: 4px solid #6f00ff;
+}
+
+.game-room-button-spinner.submit-spinner {
+  border-top: 4px solid #028802;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.user-list {
+  display: flex;
+  overflow: auto;
+}
+
+.user-list div {
+  padding: 10px;
+}
+
+.chat-container {
+  height: 90%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.chat-message {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.chat-message .message-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-message.system-message {
+  background-color: #f7f7f7;
+}
+
+.chat-time {
+  font-size: 13px;
+  color: gray;
+}
+
+.game-room-chat-input {
+  overflow: auto;
+  outline: none;
+  resize: none;
+  font-size: 11pt;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  width: 100%;
+  background-color: #f7f7f7;
+}
+
+.editor-controls {
+  display: flex;
+  justify-content: space-between;
+}
+
+.game-room-divider {
+  border: 1px solid #ebebeb;
+}
+
+.game-room-editor-settings {
+  border-bottom: 1px solid #ebebeb;
+  margin-bottom: 10px;
+}
+
+.game-room-language-selection {
+  margin-bottom: 10px;
+}
+
+.game-room-console-output {
+  border: 1px solid #ebebeb;
+  border-radius: 5px;
+  background-color: #f4f4f4;
+  padding: 10px;
+}

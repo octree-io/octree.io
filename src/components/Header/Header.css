@@ -1,0 +1,23 @@
+.header {
+  height: 56px;
+  border-bottom: 1px solid #edebec;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.header-logo {
+  margin-left: 5px;
+}
+
+.header-beta {
+  font-size: 11px;
+}
+
+.header-clickable {
+  user-select: none;
+  cursor: pointer;
+}

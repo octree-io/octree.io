@@ -1,0 +1,12 @@
+.App {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pane {
+  padding: 20px;
+  background-color: #fff;
+  height: 100%;
+  overflow: auto;
+}

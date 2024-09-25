@@ -1,0 +1,161 @@
+.lobby-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.lobby-content {
+  display: flex;
+  flex: 1;
+  height: calc(100% - 56px);
+}
+
+.lobby-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  background-color: #9266cc;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.lobby-sidebar-text {
+  flex: 0 0 60px;
+  border-bottom: 1px solid #919191;
+  padding: 15px;
+  color: white;
+}
+
+.lobby-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.lobby-chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lobby-chat-area-header {
+  flex: 0 0 60px;
+  border-bottom: 1px solid #ebebeb;
+  padding: 15px;
+  font-weight: bold;
+}
+
+.lobby-chat-area-messages {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  flex: 1;
+}
+
+.lobby-chat-area-input {
+  flex: 0 0 80px;
+  margin: 0 15px 8px 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lobby-chat-area-input > textarea {
+  border: 2px solid transparent;
+  border-radius: 5px;
+  overflow: auto;
+  outline: none;
+  resize: none;
+  background-color: #f7f7f7;
+  width: 100%;
+  padding: 10px;
+  scrollbar-width: thin;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; 
+  transition: 0.3s all;
+  -webkit-transition: 0.3s all;
+}
+
+.lobby-chat-area-input > textarea:focus {
+  background-color: #eeeeee;
+  border-color: #9266cc;
+}
+
+.lobby-channels {
+  flex: 1;
+}
+
+.lobby-channels-text {
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  margin-top: 15px;
+  margin-left: 15px;
+}
+
+.lobby-channel {
+  margin-left: 15px;
+  margin-right: 15px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  padding-left: 10px;
+  border-radius: 5px;
+  color: #ebebeb;
+  user-select: none;
+}
+
+.lobby-channel.active {
+  background-color: #b68cec;
+}
+
+.lobby-chat-message {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+}
+
+.lobby-chat-message-avatar {
+  width: 35px;
+  height: 35px;
+  background-color: #919191;
+  border-radius: 5px;
+  margin-right: 7px;
+  align-self: baseline;
+}
+
+.lobby-chat-message-user {
+  display: flex;
+  align-items: center;
+}
+
+.lobby-chat-message-user-username {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.lobby-chat-message-user-timestamp {
+  color: gray;
+  font-size: 13px;
+}
+
+.lobby-userlist {
+  width: 232px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background-color: #f8f8f8;
+  border-left: 1px solid #ebebeb;
+}
+
+.lobby-user {
+  display: flex;
+  user-select: none;
+}
+
+.lobby-user-name {
+  font-weight: bold;
+  margin-left: 7px;
+}
+
+.lobby-users-text {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 10px;
+}

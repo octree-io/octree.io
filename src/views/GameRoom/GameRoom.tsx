@@ -34,39 +34,12 @@ const GameRoom = () => {
   }
 
   const handleRunClick = async () => {
-    if (isRunLoading) {
+    if (isRunLoading || isSubmitLoading) {
       return;
     }
 
     if (editorRef.current) {
       setIsRunLoading(true);
-
-      const code = editorRef.current.getValue();
-
-      const payload = {
-        language,
-        code,
-      };
-
-      try {
-        // TODO: Change the endpoint
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/execute`, payload);
-        console.log("Run Output:", response.data);
-        setConsoleOutput(response.data);
-      } catch (error) {
-        console.error("Error executing code:", error);
-      } finally {
-        setIsRunLoading(false);
-      }
-    }
-  };
-
-  const handleSubmitClick = async () => {
-    if (isSubmitLoading) {
-      return;
-    }
-
-    if (editorRef.current) {
       setIsSubmitLoading(true);
 
       const code = editorRef.current.getValue();
@@ -84,6 +57,37 @@ const GameRoom = () => {
       } catch (error) {
         console.error("Error executing code:", error);
       } finally {
+        setIsRunLoading(false);
+        setIsSubmitLoading(false);
+      }
+    }
+  };
+
+  const handleSubmitClick = async () => {
+    if (isRunLoading || isSubmitLoading) {
+      return;
+    }
+
+    if (editorRef.current) {
+      setIsRunLoading(true);
+      setIsSubmitLoading(true);
+
+      const code = editorRef.current.getValue();
+
+      const payload = {
+        language,
+        code,
+      };
+
+      try {
+        // TODO: Change the endpoint
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/execute`, payload);
+        console.log("Run Output:", response.data);
+        setConsoleOutput(response.data);
+      } catch (error) {
+        console.error("Error executing code:", error);
+      } finally {
+        setIsRunLoading(false);
         setIsSubmitLoading(false);
       }
     }
@@ -117,11 +121,11 @@ const GameRoom = () => {
                     <option value="java">Java</option>
                     <option value="cpp">C++</option>
                     <option value="csharp">C#</option>
-                    <option value="typescript">TypeScript</option>
+                    {/* <option value="typescript">TypeScript</option> */}
                     <option value="ruby">Ruby</option>
-                    <option value="go">Go</option>
+                    {/* <option value="go">Go</option> */}
                     <option value="rust">Rust</option>
-                    <option value="ocaml">OCaml</option>
+                    {/* <option value="ocaml">OCaml</option> */}
                   </select>
                   </div>
                 </div>
@@ -137,8 +141,8 @@ const GameRoom = () => {
                   onMount={(editor) => (editorRef.current = editor)}
                 />
 
-                <div className="editor-controls">
-                  <div className="timer">15:00</div>
+                <div className="game-room-editor-controls">
+                  <div className="game-room-timer">15:00</div>
                   <div className="game-room-button-container">
                     <div 
                     className={`game-room-button game-room-run-button ${isRunLoading ? 'disabled' : ''}`} 
@@ -182,57 +186,57 @@ const GameRoom = () => {
 
         <Allotment.Pane preferredSize="25%" maxSize={400}>
           <div className="pane">
-            <div className="user-list">
+            <div className="game-room-user-list">
               <div>User1</div>
               <div>User2</div>
             </div>
 
             <hr className="game-room-divider" />
 
-            <div className="chat-container">
-              <div className="chat-messages">
-                <div className="chat-message system-message">
-                  <div className="message-info">
+            <div className="game-room-chat-container">
+              <div className="game-room-chat-messages">
+                <div className="game-room-chat-message game-room-system-message">
+                  <div className="game-room-message-info">
                     <div>👋 <b>User1</b> joined the room</div>
                   </div>
-                  <div className="chat-time">1:20 AM</div>
+                  <div className="game-room-chat-time">1:20 AM</div>
                 </div>
 
-                <div className="chat-message system-message">
-                  <div className="message-info">
+                <div className="game-room-chat-message game-room-system-message">
+                  <div className="game-room-message-info">
                     <div>👋 <b>User2</b> joined the room</div>
                   </div>
-                  <div className="chat-time">1:21 AM</div>
+                  <div className="game-room-chat-time">1:21 AM</div>
                 </div>
 
-                <div className="chat-message">
-                  <div className="message-info">
+                <div className="game-room-chat-message">
+                  <div className="game-room-message-info">
                     <b>User1</b>
                     <div>hello</div>
                   </div>
-                  <div className="chat-time">1:23 AM</div>
+                  <div className="game-room-chat-time">1:23 AM</div>
                 </div>
 
-                <div className="chat-message">
-                  <div className="message-info">
+                <div className="game-room-chat-message">
+                  <div className="game-room-message-info">
                     <b>User2</b>
                     <div>wasup</div>
                   </div>
-                  <div className="chat-time">1:24 AM</div>
+                  <div className="game-room-chat-time">1:24 AM</div>
                 </div>
 
-                <div className="chat-message system-message">
-                  <div className="message-info">
+                <div className="game-room-chat-message game-room-system-message">
+                  <div className="game-room-message-info">
                     <div>❌<b>User1</b> submitted a wrong answer.</div>
                   </div>
-                  <div className="chat-time">1:25 AM</div>
+                  <div className="game-room-chat-time">1:25 AM</div>
                 </div>
 
-                <div className="chat-message system-message">
-                  <div className="message-info">
+                <div className="game-room-chat-message game-room-system-message">
+                  <div className="game-room-message-info">
                     <div>💯<b>User2</b> finished in 32ms in python!</div>
                   </div>
-                  <div className="chat-time">1:26 AM</div>
+                  <div className="game-room-chat-time">1:26 AM</div>
                 </div>
               </div>
 

@@ -4,13 +4,6 @@
   flex-direction: column;
 }
 
-.pane {
-  padding: 20px;
-  background-color: #fff;
-  height: 100%;
-  overflow: auto;
-}
-
 .game-room-header-bar {
   background-color: #f4f4f4;
   border-bottom: 1px solid #ebebeb;
@@ -36,7 +29,7 @@
   background-color: #58b856;
 }
 
-.timer {
+.game-room-timer {
   width: 70px;
   border: 2px solid black;
   box-shadow: 4px 4px 0px #000;
@@ -108,16 +101,16 @@
   100% { transform: rotate(360deg); }
 }
 
-.user-list {
+.game-room-user-list {
   display: flex;
   overflow: auto;
 }
 
-.user-list div {
+.game-room-user-list div {
   padding: 10px;
 }
 
-.chat-container {
+.game-room-chat-container {
   height: 90%;
   flex: 1;
   display: flex;
@@ -125,29 +118,29 @@
   justify-content: space-between;
 }
 
-.chat-messages {
+.game-room-chat-messages {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
   margin-bottom: 10px;
 }
 
-.chat-message {
+.game-room-chat-message {
   display: flex;
   justify-content: space-between;
   margin-bottom: 5px;
 }
 
-.chat-message .message-info {
+.game-room-chat-message .game-room-message-info {
   display: flex;
   flex-direction: column;
 }
 
-.chat-message.system-message {
+.game-room-chat-message.game-room-system-message {
   background-color: #f7f7f7;
 }
 
-.chat-time {
+.game-room-chat-time {
   font-size: 13px;
   color: gray;
 }
@@ -164,9 +157,10 @@
   background-color: #f7f7f7;
 }
 
-.editor-controls {
+.game-room-editor-controls {
   display: flex;
   justify-content: space-between;
+  min-height: 44px;
 }
 
 .game-room-divider {

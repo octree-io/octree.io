@@ -15,8 +15,12 @@
   flex-direction: column;
   width: 240px;
   background-color: #9266cc;
-  overflow-y: auto;
+  overflow: hidden;
   scrollbar-width: thin;
+}
+
+.lobby-sidebar:hover {
+  overflow: auto;
 }
 
 .lobby-sidebar-text {
@@ -110,6 +114,8 @@
   display: flex;
   align-items: center;
   padding: 10px;
+  margin-top: 7px;
+  margin-left: 7px;
 }
 
 .lobby-chat-message-avatar {
@@ -136,12 +142,20 @@
   font-size: 13px;
 }
 
+.lobby-chat-message-text {
+  word-break: break-word;
+}
+
 .lobby-userlist {
   width: 232px;
-  overflow-y: auto;
+  overflow: hidden;
   scrollbar-width: thin;
   background-color: #f8f8f8;
   border-left: 1px solid #ebebeb;
+}
+
+.lobby-userlist:hover {
+  overflow: auto;
 }
 
 .lobby-user {
@@ -219,6 +233,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   margin-bottom: 7px;
+  width: 193px;
 }
 
 .lobby-room-buttons button:hover {

@@ -33,6 +33,7 @@ const Lobby = () => {
           </div>
 
           <div className="lobby-chat-area-messages">
+
             <div className="lobby-chat-message">
               <div className="lobby-chat-message-avatar">
                 <img src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35} style={{ borderRadius: "5px" }}></img>
@@ -48,10 +49,10 @@ const Lobby = () => {
                     12:00 AM
                   </div>
                 </div>
-                <div className="lobby-chat-message-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer viverra sed nisl eget scelerisque. Vivamus risus neque, lobortis vel fringilla at, sollicitudin in magna. Sed condimentum lorem nec rutrum iaculis. Suspendisse potenti. Nulla facilisi. Maecenas a malesuada nisi, sed tempus nibh. Vivamus ut dolor et nibh lacinia interdum nec tempor mi. Nulla pellentesque lacinia mauris, eget pellentesque nibh convallis vitae. Proin commodo velit vehicula, mollis quam non, eleifend ligula. In sem neque, condimentum eu gravida vel, rhoncus eget erat. Donec ligula odio, venenatis non auctor pretium, tempor quis ligula. Sed sollicitudin ut lacus ut ornare. Donec libero est, commodo non diam vitae, eleifend consectetur nunc. In eleifend risus ac elit sagittis, in bibendum elit pellentesque. Aliquam eget elit hendrerit, egestas tellus nec, porta sapien. Vestibulum sodales at felis et hendrerit. </div>
+                <div className="lobby-chat-message-text">My name Borat! I come from glorious nation of Kazakhstan. Very nice, yes! In my country, we say, "Great success!" when we see something good. I like America. You have many fancy things, like McDonald’s and Pamela Anderson. Wow wow wee wow! Very much excite! In Kazakhstan, we make celebration by dancing with goat and drinking fermented horse milk. But in America, you have chocolate shake and hamburgers! High five! I try learn American custom, but sometimes, very confusing. You have many rules! But I like it, very much. So I say, "Thank you, America!" You make Borat happy!</div>
               </div>
-
             </div>
+
           </div>
 
           <div className="lobby-chat-area-input">

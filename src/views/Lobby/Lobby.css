@@ -165,3 +165,62 @@
 .lobby-users {
   margin-left: 20px;
 }
+
+.lobby-roomlist {
+  padding: 15px;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.lobby-roomlist-header {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: rgb(101, 101, 101);
+  padding-left: 10px;
+}
+
+.lobby-rooms {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.lobby-room {
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+  margin-bottom: 5px;
+  background-color: #f7f7f7;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border: 1px solid #ebebeb;
+  color: #383838;
+}
+
+.lobby-room:hover {
+  background-color: #b68cec;
+  color: white;
+}
+
+.lobby-room-buttons {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.lobby-room-buttons button {
+  background-color: #9266cc;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 7px;
+}
+
+.lobby-room-buttons button:hover {
+  background-color: #b68cec;
+}

@@ -61,16 +61,18 @@ const Lobby = () => {
         </div>
 
         <div className="lobby-userlist">
-          <div>
-            <div>Rooms</div>
-            <div>
-              <div>Room1</div>
-              <div>Room2</div>
+          <div className="lobby-roomlist">
+            <div className="lobby-roomlist-header">Rooms</div>
+            <div className="lobby-rooms">
+              <div className="lobby-room">Room1</div>
+              <div className="lobby-room">Room2</div>
             </div>
-            <button>Join Room</button>
-            <button>Create Room</button>
+            <div className="lobby-room-buttons">
+              <button>Join Room</button>
+              <button>Create Room</button>
+            </div>
           </div>
- 
+
           <div>
             <div className="lobby-users-text">Users</div>
             <div className="lobby-users">

@@ -8,6 +8,10 @@ const Landing = () => {
     navigate("/room");
   };
 
+  const handleLobbyClick = () => {
+    navigate("/home");
+  };
+
   return (
     <div>
       <Header />
@@ -15,6 +19,7 @@ const Landing = () => {
       <div>Landing page under construction</div>
 
       <button onClick={handleGameRoomClick}>Go to game room</button>
+      <button onClick={handleLobbyClick}>Go to lobby</button>
     </div>
   );
 };

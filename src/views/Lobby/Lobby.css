@@ -155,7 +155,13 @@
 }
 
 .lobby-users-text {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: bold;
   padding: 10px;
+  margin-left: 15px;
+  color: rgb(101, 101, 101);
+}
+
+.lobby-users {
+  margin-left: 20px;
 }

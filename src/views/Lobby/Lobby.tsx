@@ -61,15 +61,28 @@ const Lobby = () => {
         </div>
 
         <div className="lobby-userlist">
-          <div className="lobby-users-text">Users</div>
-          <div className="lobby-users">
-            <div className="lobby-user">
-              <div className="lobby-user-profile">
-                <img src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35} style={{ borderRadius: "5px" }}></img>
+          <div>
+            <div>Rooms</div>
+            <div>
+              <div>Room1</div>
+              <div>Room2</div>
+            </div>
+            <button>Join Room</button>
+            <button>Create Room</button>
+          </div>
+ 
+          <div>
+            <div className="lobby-users-text">Users</div>
+            <div className="lobby-users">
+              <div className="lobby-user">
+                <div className="lobby-user-profile">
+                  <img src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35} style={{ borderRadius: "5px" }}></img>
+                </div>
+                <div className="lobby-user-name">User</div>
               </div>
-              <div className="lobby-user-name">User</div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

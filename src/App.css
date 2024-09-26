@@ -9,4 +9,5 @@
   background-color: #fff;
   height: 100%;
   overflow: auto;
+  scrollbar-width: thin;
 }

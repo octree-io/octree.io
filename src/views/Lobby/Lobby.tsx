@@ -36,7 +36,7 @@ const Lobby = () => {
 
             <div className="lobby-chat-message">
               <div className="lobby-chat-message-avatar">
-                <img src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35} style={{ borderRadius: "5px" }}></img>
+                <img className="lobby-user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
               </div>
 
               <div className="lobby-chat-message-content">
@@ -79,7 +79,7 @@ const Lobby = () => {
             <div className="lobby-users">
               <div className="lobby-user">
                 <div className="lobby-user-profile">
-                  <img src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35} style={{ borderRadius: "5px" }}></img>
+                  <img className="lobby-user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
                 </div>
                 <div className="lobby-user-name">User</div>
               </div>

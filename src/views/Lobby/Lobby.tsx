@@ -34,22 +34,33 @@ const Lobby = () => {
 
           <div className="lobby-chat-area-messages">
 
-            <div className="lobby-chat-message">
-              <div className="lobby-chat-message-avatar">
-                <img className="lobby-user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
-              </div>
-
-              <div className="lobby-chat-message-content">
-                <div className="lobby-chat-message-user">
-                  <div className="lobby-chat-message-user-username">
-                    User
-                  </div>
-
-                  <div className="lobby-chat-message-user-timestamp">
-                    12:00 AM
-                  </div>
+            <div className="lobby-chat-message-container">
+              <div className="lobby-chat-message">
+                <div className="lobby-chat-message-avatar">
+                  <img className="lobby-user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
                 </div>
-                <div className="lobby-chat-message-text">My name Borat! I come from glorious nation of Kazakhstan. Very nice, yes! In my country, we say, "Great success!" when we see something good. I like America. You have many fancy things, like McDonald’s and Pamela Anderson. Wow wow wee wow! Very much excite! In Kazakhstan, we make celebration by dancing with goat and drinking fermented horse milk. But in America, you have chocolate shake and hamburgers! High five! I try learn American custom, but sometimes, very confusing. You have many rules! But I like it, very much. So I say, "Thank you, America!" You make Borat happy!</div>
+
+                <div className="lobby-chat-message-content">
+                  <div className="lobby-chat-message-user">
+                    <div className="lobby-chat-message-user-username">
+                      User
+                    </div>
+
+                    <div className="lobby-chat-message-user-timestamp">
+                      12:00 AM
+                    </div>
+                  </div>
+                  <div className="lobby-chat-message-text">My name Borat! I come from glorious nation of Kazakhstan. Very nice, yes! In my country, we say, "Great success!" when we see something good. I like America. You have many fancy things, like McDonald’s and Pamela Anderson. Wow wow wee wow! Very much excite! In Kazakhstan, we make celebration by dancing with goat and drinking fermented horse milk. But in America, you have chocolate shake and hamburgers! High five! I try learn American custom, but sometimes, very confusing. You have many rules! But I like it, very much. So I say, "Thank you, America!" You make Borat happy!</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lobby-chat-message-container">
+              <div className="lobby-chat-message-continuation">
+                <div className="lobby-chat-message-content-continuation">
+                  <div className="lobby-chat-message-user-timestamp-continuation">12:01 AM</div>
+                  <div className="lobby-chat-message-text-continuation">This is another message</div>
+                </div>
               </div>
             </div>
 

@@ -110,6 +110,18 @@
   background-color: #b68cec;
 }
 
+.lobby-chat-message-container {
+  position: relative;
+}
+
+.lobby-chat-message-container:hover {
+  background-color: #f7f7f7;
+}
+
+.lobby-chat-message-container:hover .ellipsis {
+  opacity: 1;
+}
+
 .lobby-chat-message {
   display: flex;
   align-items: center;
@@ -147,6 +159,33 @@
   white-space: break-spaces;
 }
 
+/* Separate chat message styles for the case where a message is sent by the previous sender */
+
+.lobby-chat-message-continuation {
+  display: flex;
+  margin-top: 5px;
+}
+
+.lobby-chat-message-continuation:hover .lobby-chat-message-user-timestamp-continuation {
+  visibility: visible;
+}
+
+.lobby-chat-message-content-continuation {
+  display: flex;
+  align-items: center;
+}
+
+.lobby-chat-message-text-continuation {
+  margin-left: 9px;
+}
+
+.lobby-chat-message-user-timestamp-continuation {
+  color: gray;
+  font-size: 10px;
+  visibility: hidden;
+  margin-left: 10px;
+}
+
 .lobby-userlist {
   width: 232px;
   overflow: hidden;
@@ -171,6 +210,7 @@
 
 .lobby-user-profile-picture {
   border-radius: 5px;
+  object-fit: cover;
 }
 
 .lobby-users-text {

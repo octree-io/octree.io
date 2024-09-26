@@ -104,6 +104,7 @@
   border-radius: 5px;
   color: #ebebeb;
   user-select: none;
+  cursor: pointer;
 }
 
 .lobby-channel.active {

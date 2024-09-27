@@ -191,8 +191,23 @@ const GameRoom = () => {
         <Allotment.Pane preferredSize="25%" maxSize={400}>
           <div className="pane">
             <div className="game-room-user-list">
-              <div>User1</div>
-              <div>User2</div>
+              <div className="game-room-user">
+                <div className="game-room-user-profile-wrapper">
+                  <img className="game-room-user-profile" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+                </div>
+                <div className="game-room-user-name">
+                  User1
+                </div>
+              </div>
+
+              <div className="game-room-user">
+                <div className="game-room-user-profile-wrapper">
+                  <img className="game-room-user-profile" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
+                </div>
+                <div className="game-room-user-name">
+                  User2
+                </div>
+              </div>
             </div>
 
             <hr className="game-room-divider" />
@@ -201,7 +216,7 @@ const GameRoom = () => {
               <div className="game-room-chat-messages">
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div>👋 <b>User1</b> joined the room</div>
+                    <div className="game-room-message-text">👋 <b>User1</b> joined the room</div>
                   </div>
                   <div className="game-room-chat-time">1:20 AM</div>
                 </div>
@@ -215,30 +230,44 @@ const GameRoom = () => {
 
                 <div className="game-room-chat-message">
                   <div className="game-room-message-info">
-                    <b>User1</b>
-                    <div>hello</div>
+                    <div className="game-room-message-content">
+                      <div className="game-room-user-profile-wrapper chat-message">
+                        <img className="game-room-user-profile" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
+                      </div>
+                      <div className="game-room-message-group">
+                        <b>User2</b>
+                        <div className="game-room-message-text">hello</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="game-room-chat-time">1:23 AM</div>
+                  <div className="game-room-chat-time">1:24 AM</div>
                 </div>
 
                 <div className="game-room-chat-message">
                   <div className="game-room-message-info">
-                    <b>User2</b>
-                    <div>wasup</div>
+                    <div className="game-room-message-content">
+                      <div className="game-room-user-profile-wrapper chat-message">
+                        <img className="game-room-user-profile" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+                      </div>
+                      <div className="game-room-message-group">
+                        <b>User1</b>
+                        <div className="game-room-message-text">wasup</div>
+                      </div>
+                    </div>
                   </div>
                   <div className="game-room-chat-time">1:24 AM</div>
                 </div>
 
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div>❌<b>User1</b> submitted a wrong answer.</div>
+                    <div className="game-room-message-text">❌<b>User1</b> submitted a wrong answer.</div>
                   </div>
                   <div className="game-room-chat-time">1:25 AM</div>
                 </div>
 
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div>💯<b>User2</b> finished in 32ms in python!</div>
+                    <div className="game-room-message-text">💯<b>User2</b> finished in 32ms in python!</div>
                   </div>
                   <div className="game-room-chat-time">1:26 AM</div>
                 </div>

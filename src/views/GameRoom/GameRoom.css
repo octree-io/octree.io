@@ -104,10 +104,32 @@
 .game-room-user-list {
   display: flex;
   overflow: auto;
+  scrollbar-width: none;
 }
 
-.game-room-user-list div {
+.game-room-user-list:hover {
+  scrollbar-width: thin;
+}
+
+.game-room-user {
   padding: 10px;
+}
+
+.game-room-user-profile-wrapper {
+  display: flex;
+}
+
+.game-room-user-profile-wrapper.chat-message {
+  margin-top: 7px;
+}
+
+.game-room-user-profile {
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.game-room-user-name {
+  font-weight: bold;
 }
 
 .game-room-chat-container {
@@ -123,13 +145,20 @@
   overflow-y: auto;
   padding: 10px;
   margin-bottom: 10px;
+  scrollbar-width: none;
+}
+
+.game-room-chat-messages:hover {
   scrollbar-width: thin;
 }
 
 .game-room-chat-message {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 5px;
+  padding: 5px 10px;
+  position: relative;
 }
 
 .game-room-chat-message .game-room-message-info {
@@ -141,9 +170,26 @@
   background-color: #f7f7f7;
 }
 
+.game-room-message-text {
+  word-wrap: break-word;
+}
+
 .game-room-chat-time {
+  position: absolute;
+  top: 5px;
+  right: 7px;
   font-size: 13px;
   color: gray;
+  white-space: nowrap;
+}
+
+.game-room-message-group {
+  margin-left: 7px;
+}
+
+.game-room-message-content {
+  display: flex;
+  align-items: flex-start;
 }
 
 .game-room-chat-input {

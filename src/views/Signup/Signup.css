@@ -119,3 +119,9 @@
   outline: none;
   border: 2px solid #9266cc; 
 }
+
+@media (max-width: 767px) {
+  .signup-box {
+    width: 300px;
+  }
+}

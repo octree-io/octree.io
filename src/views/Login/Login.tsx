@@ -1,8 +1,15 @@
 import Header from "../../components/Header/Header";
 import "./Login.css";
 import Logo from "../../assets/octopus.svg";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  const navigate = useNavigate();
+
+  const handleSignupRedirect = () => {
+    navigate("/signup");
+  };
+
   return (
     <div className="login-container">
       <Header />
@@ -28,7 +35,7 @@ const Login = () => {
             </div>
             <button type="submit" className="login-button">Login</button>
           </form>
-          <div className="login-signup-redirect">Don't have an account? <a href="/signup">Sign up</a></div>
+          <div className="login-signup-redirect">Don't have an account? <a onClick={handleSignupRedirect}>Sign up</a></div>
         </div>
       </div>
 

@@ -120,6 +120,10 @@
   border: 2px solid #9266cc; 
 }
 
+.signup-login-redirect a {
+  cursor: pointer;
+}
+
 @media (max-width: 767px) {
   .signup-box {
     width: 300px;

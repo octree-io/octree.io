@@ -1,0 +1,121 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.login-main-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  width: 500px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  margin-bottom: 100px;
+}
+
+.login-box h2 {
+  margin-bottom: 30px;
+}
+
+.login-form-group {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.login-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.login-form-group input {
+  width: 100%;
+  padding: 7px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 15px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #9266cc;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: 0.3s all;
+}
+
+.login-button:hover {
+  background-color: #b68cec;
+}
+
+.login-divider {
+  margin: 20px 0;
+}
+
+.login-signup-redirect {
+  padding-top: 30px;
+}
+
+.login-signup-redirect a {
+  text-decoration: none;
+  color: black;
+}
+
+.login-signup-redirect a:hover {
+  text-decoration: underline;
+}
+
+.login-footer {
+  text-align: center;
+  padding: 15px;
+  font-size: 14px;
+}
+
+.login-footer a {
+  text-decoration: none;
+  color: black;
+  margin: 0 10px;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+.login-footer img {
+  vertical-align: middle;
+}
+
+.login-google-img {
+  content: url("../../assets/google/signin/light.png");
+  transition: 0.3s all;
+  cursor: pointer;
+  border-radius: 15px;
+}
+
+.login-google-img:hover {
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-box input {
+  border: 2px solid #ebebeb;
+  transition: 0.3s all;
+}
+
+.login-box input:focus {
+  outline: none;
+  border: 2px solid #9266cc; 
+}

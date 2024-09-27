@@ -136,6 +136,10 @@ const GameRoom = () => {
                     minimap: { enabled: false },
                     hideCursorInOverviewRuler: true,
                     renderLineHighlight: "none",
+                    scrollbar: {
+                      verticalScrollbarSize: 8,
+                      horizontalScrollbarSize: 8,
+                    }
                   }}
                   beforeMount={handleEditorWillMount}
                   onMount={(editor) => (editorRef.current = editor)}

@@ -84,3 +84,7 @@
 .header-login-button:hover {
   background-color: #b68cec;
 }
+
+.header-arrow-icon {
+  cursor: pointer;
+}

@@ -67,7 +67,7 @@ const Lobby = () => {
           </div>
 
           <div className="lobby-chat-area-input">
-            <textarea placeholder="Message #general" />
+            <textarea placeholder="Message #general" maxLength={2000} />
           </div>
         
         </div>

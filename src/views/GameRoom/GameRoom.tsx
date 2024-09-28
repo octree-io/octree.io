@@ -273,7 +273,11 @@ const GameRoom = () => {
                 </div>
               </div>
 
-              <textarea className="game-room-chat-input" placeholder="Send a message" />
+              <textarea
+                className="game-room-chat-input"
+                placeholder="Send a message"
+                maxLength={2000}
+              />
             </div>
           </div>
         </Allotment.Pane>

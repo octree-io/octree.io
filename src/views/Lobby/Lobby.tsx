@@ -1,7 +1,157 @@
+import { io, Socket } from "socket.io-client";
 import Header from "../../components/Header/Header";
 import "./Lobby.css";
+import { useNavigate } from "react-router-dom";
+import React, { memo, useEffect, useRef, useState } from "react";
+import apiClient, { TokenExpiredError } from "../../client/APIClient";
+
+interface Message {
+  username: string;
+  profilePic: string;
+  message: string;
+  timestamp?: string;
+}
+
+const MessageFormatter = memo(({ message }: { message: string }) => (
+  <div>
+    {message.split("\n").map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        <br />
+      </React.Fragment>
+    ))}
+  </div>
+));
 
 const Lobby = () => {
+  const navigate = useNavigate();
+  const socketRef = useRef<Socket | null>(null);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [users, setUsers] = useState<{ [username: string]: string }>({});
+
+  const refreshAccessToken = async () => {
+    try {
+      const response: any = await apiClient.get("/auth/refresh-token");
+      const { accessToken } = response;
+      localStorage.setItem("token", accessToken);
+      return true;
+    } catch (e) {
+      if (e instanceof TokenExpiredError) {
+        navigate("/login");
+        return false;
+      }
+      return false;
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (message.trim() !== "") {
+      socketRef.current?.emit("message", message);
+      setMessage("");
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const formatTimestamp = (timestamp: string | undefined): string => {
+    if (!timestamp) {
+      return "";
+    }
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+    });
+  };
+
+  useEffect(() => {
+    if (socketRef.current) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.log("[Lobby] Invalid token");
+      navigate("/login");
+      return;
+    }
+
+    socketRef.current = io(import.meta.env.VITE_API_URL + "/lobby", {
+      auth: {
+        token
+      },
+    });
+
+    socketRef.current.on("welcome", (data) => {
+      console.log("Got welcome");
+      console.log(data);
+    });
+
+    socketRef.current.on("currentUsers", (data) => {
+      console.log("Got currentUsers");
+      const currentUsers = data.reduce((acc: any, user: any) => {
+        acc[user.username] = user.profilePic;
+        return acc;
+      }, {});
+
+      setUsers(currentUsers);
+    });
+
+    socketRef.current.on("userJoined", (data) => {
+      console.log("Got userJoined");
+      setUsers((prevUsers) => {
+        if (!prevUsers[data.username]) {
+          return { ...prevUsers, [data.username]: data.profilePic };
+        }
+        return prevUsers;
+      });
+    });
+
+    socketRef.current.on("userLeft", (data) => {
+      console.log("Got userLeft", data);
+      setUsers((prevUsers) => {
+        const updatedUsers = { ...prevUsers };
+        delete updatedUsers[data.username];
+        return updatedUsers;
+      });
+    });
+
+    socketRef.current.on("chatMessage", (data) => {
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, data];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
+    });
+
+    socketRef.current.on("tokenExpired", async () => {
+      console.log("Token expired, refreshing...");
+      const newToken = await refreshAccessToken();
+      if (newToken && socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = io(import.meta.env.VITE_API_URL + "/lobby", {
+          auth: {
+            token: newToken,
+          },
+        });
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [navigate]);
+
   return (
     <div className="lobby-container">
       <Header />
@@ -21,8 +171,6 @@ const Lobby = () => {
 
             <div className="lobby-channels">
               <div className="lobby-channel active"># general</div>
-              <div className="lobby-channel"># system-design</div>
-              <div className="lobby-channel"># interviews</div>
             </div>
           </div>
         </div>
@@ -33,41 +181,59 @@ const Lobby = () => {
           </div>
 
           <div className="lobby-chat-area-messages">
+            {messages.map((msg, index) => {
 
-            <div className="lobby-chat-message-container">
-              <div className="lobby-chat-message">
-                <div className="lobby-chat-message-avatar">
-                  <img className="user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
-                </div>
+              const isContinuation = index > 0 && messages[index-1].username === msg.username;
 
-                <div className="lobby-chat-message-content">
-                  <div className="lobby-chat-message-user">
-                    <div className="lobby-chat-message-user-username">
-                      User
-                    </div>
-
-                    <div className="lobby-chat-message-user-timestamp">
-                      12:00 AM
+              return isContinuation ? (
+                <div key={index} className="lobby-chat-message-container">
+                  <div className="lobby-chat-message-continuation">
+                    <div className="lobby-chat-message-content-continuation">
+                      <div className="lobby-chat-message-user-timestamp-continuation">
+                        {formatTimestamp(msg.timestamp)}
+                      </div>
+                      <div className="lobby-chat-message-text-continuation">
+                        <MessageFormatter message={msg.message} />
+                      </div>
                     </div>
                   </div>
-                  <div className="lobby-chat-message-text">My name Borat! I come from glorious nation of Kazakhstan. Very nice, yes! In my country, we say, "Great success!" when we see something good. I like America. You have many fancy things, like McDonald’s and Pamela Anderson. Wow wow wee wow! Very much excite! In Kazakhstan, we make celebration by dancing with goat and drinking fermented horse milk. But in America, you have chocolate shake and hamburgers! High five! I try learn American custom, but sometimes, very confusing. You have many rules! But I like it, very much. So I say, "Thank you, America!" You make Borat happy!</div>
                 </div>
-              </div>
-            </div>
+              ) : (
+                <div key={index} className="lobby-chat-message-container">
+                  <div className="lobby-chat-message">
+                    <div className="lobby-chat-message-avatar">
+                      <img
+                        className="user-profile-picture"
+                        src={msg.profilePic}
+                        width={35}
+                        height={35}
+                        alt={msg.username}
+                      />
+                    </div>
 
-            <div className="lobby-chat-message-container">
-              <div className="lobby-chat-message-continuation">
-                <div className="lobby-chat-message-content-continuation">
-                  <div className="lobby-chat-message-user-timestamp-continuation">12:01 AM</div>
-                  <div className="lobby-chat-message-text-continuation">This is another message</div>
+                    <div className="lobby-chat-message-content">
+                      <div className="lobby-chat-message-user">
+                        <div className="lobby-chat-message-user-username">{msg.username}</div>
+                        <div className="lobby-chat-message-user-timestamp">{formatTimestamp(msg.timestamp)}</div>
+                      </div>
+                      <div className="lobby-chat-message-text">
+                        <MessageFormatter message={msg.message} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
+              );
+            })}
           </div>
 
           <div className="lobby-chat-area-input">
-            <textarea placeholder="Message #general" maxLength={2000} />
+            <textarea
+              placeholder="Message #general"
+              maxLength={2000}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
           </div>
         
         </div>
@@ -76,11 +242,8 @@ const Lobby = () => {
           <div className="lobby-roomlist">
             <div className="lobby-roomlist-header">Rooms</div>
             <div className="lobby-rooms">
-              <div className="lobby-room">Room1</div>
-              <div className="lobby-room">Room2</div>
             </div>
             <div className="lobby-room-buttons">
-              <button>Join Room</button>
               <button>Create Room</button>
             </div>
           </div>
@@ -88,12 +251,14 @@ const Lobby = () => {
           <div>
             <div className="lobby-users-text">Users</div>
             <div className="lobby-users">
-              <div className="lobby-user">
-                <div className="lobby-user-profile">
-                  <img className="user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+              {Object.entries(users).map(([username, profilePic], index) => (
+                <div key={index} className="lobby-user">
+                  <div className="lobby-user-profile">
+                    <img className="user-profile-picture" src={profilePic} width={35} height={35} alt={username}></img>
+                  </div>
+                  <div className="lobby-user-name">{username}</div>
                 </div>
-                <div className="lobby-user-name">User</div>
-              </div>
+              ))}
             </div>
           </div>
 

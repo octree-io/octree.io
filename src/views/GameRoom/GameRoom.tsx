@@ -273,6 +273,7 @@ const GameRoom = () => {
                   <div className="game-room-chat-time">1:25 AM</div>
                 </div>
 
+                {/* TODO: Maybe the timestamp and text is better handled with flex */}
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
                     <div className="game-room-message-text">💯<b>Samoyed</b> finished in 32ms in python!</div>

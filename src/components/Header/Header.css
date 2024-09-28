@@ -63,3 +63,24 @@
 .header-dropdown-item:last-child {
   border-bottom: none;
 }
+
+.header-login-container {
+  display: flex;
+  align-items: center;
+}
+
+.header-login-button {
+  background-color: #9266cc;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 7px;
+  width: 70px;
+}
+
+.header-login-button:hover {
+  background-color: #b68cec;
+}

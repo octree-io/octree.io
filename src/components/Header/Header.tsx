@@ -3,9 +3,12 @@ import Logo from "../../assets/octopus.svg";
 import "./Header.css";
 import { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { jwtDecode } from "jwt-decode";
+import apiClient, { TokenExpiredError } from "../../client/APIClient";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null); 
 
   const navigate = useNavigate();
@@ -18,13 +21,61 @@ const Header = () => {
     setIsDropdownOpen((prev) => !prev);
   };
 
-  const handleLogout = () => {
-    console.log("Logout logic here");
+  const handleLogout = async () => {
+    console.log("Logging out");
+    localStorage.removeItem("token");
+    await apiClient.get("/auth/logout");
+    setIsLoggedIn(false);
+    navigate("/");
   };
 
   const handleSettings = () => {
     navigate("/settings");
   };
+
+  const isTokenValid = (token: string | null): boolean => {
+    if (!token) return false;
+
+    try {
+      const decodedToken: any = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      return decodedToken.exp > currentTime;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const refreshToken = async () => {
+    try {
+      const response: any = await apiClient.get('/auth/refresh-token');
+      const { accessToken } = response;
+      localStorage.setItem("token", accessToken);
+      return true;
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        handleLogout();
+      } else {
+        console.error("Failed to refresh token:", error);
+      }
+      return false;
+    }
+  };
+
+  const checkLoginStatus = async () => {
+    const token = localStorage.getItem("token");
+    if (token && isTokenValid(token)) {
+      setIsLoggedIn(true);
+    } else if (token) {
+      const tokenRefreshed = await refreshToken();
+      setIsLoggedIn(tokenRefreshed);
+    } else {
+      setIsLoggedIn(false);
+    }
+  };
+
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
 
   // TODO: Fix the bug where clicking the profile again doesn't close the dropdown
   useEffect(() => {
@@ -52,28 +103,34 @@ const Header = () => {
         </h3>
       </div>
 
-      <div className="header-profile-container">
-        <img
-          className="header-profile-icon header-clickable"
-          onClick={handleProfileClick}
-          src={"https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png"}
-          width={35}
-          alt="Profile"
-        />
-        <div className="header-arrow-icon" onClick={handleProfileClick}>
-          {isDropdownOpen ? <FiChevronUp /> : <FiChevronDown />}
-        </div>
-        {isDropdownOpen && (
-          <div className="header-profile-dropdown" ref={dropdownRef}>
-            <div className="header-dropdown-item" onClick={handleSettings}>
-              Settings
+      {isLoggedIn ? (
+          <div className="header-profile-container">
+            <img
+              className="header-profile-icon header-clickable"
+              onClick={handleProfileClick}
+              src={"https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png"}
+              width={35}
+              alt="Profile"
+            />
+            <div className="header-arrow-icon" onClick={handleProfileClick}>
+              {isDropdownOpen ? <FiChevronUp /> : <FiChevronDown />}
             </div>
-            <div className="header-dropdown-item" onClick={handleLogout}>
-              Logout
-            </div>
+            {isDropdownOpen && (
+              <div className="header-profile-dropdown" ref={dropdownRef}>
+                <div className="header-dropdown-item" onClick={handleSettings}>
+                  Settings
+                </div>
+                <div className="header-dropdown-item" onClick={handleLogout}>
+                  Logout
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="header-login-container">
+            <button className="header-login-button" onClick={() => navigate("/login")}>Login</button>
           </div>
         )}
-      </div>
     </div>
   );
 };

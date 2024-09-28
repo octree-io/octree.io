@@ -9,6 +9,7 @@ import apiClient, { TokenExpiredError } from "../../client/APIClient";
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profilePic, setProfilePic] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null); 
 
   const navigate = useNavigate();
@@ -65,9 +66,18 @@ const Header = () => {
     const token = localStorage.getItem("token");
     if (token && isTokenValid(token)) {
       setIsLoggedIn(true);
+      const decodedToken: any = jwtDecode(token);
+      setProfilePic(decodedToken.profilePic);
     } else if (token) {
       const tokenRefreshed = await refreshToken();
       setIsLoggedIn(tokenRefreshed);
+      if (tokenRefreshed) {
+        const refreshedToken = localStorage.getItem("token");
+        if (refreshedToken) {
+          const decodedToken: any = jwtDecode(refreshedToken);
+          setProfilePic(decodedToken.profilePic);
+        }
+      }
     } else {
       setIsLoggedIn(false);
     }
@@ -108,7 +118,7 @@ const Header = () => {
             <img
               className="header-profile-icon header-clickable"
               onClick={handleProfileClick}
-              src={"https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png"}
+              src={profilePic || ""}
               width={35}
               alt="Profile"
             />

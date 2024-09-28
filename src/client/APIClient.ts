@@ -54,6 +54,7 @@ class APIClient {
   }
 
   private async refreshAccessToken(): Promise<string | null> {
+    console.log("Refreshing access token");
     try {
       const response = await this.api.get('/auth/refresh-token');
       const { accessToken } = response.data;
@@ -78,6 +79,7 @@ class APIClient {
   }
 
   private async handle401Error(originalRequest: any): Promise<any> {
+    console.log("Handling 401 error");
     if (!this.isRefreshing) {
       this.isRefreshing = true;
       const newAccessToken = await this.refreshAccessToken();

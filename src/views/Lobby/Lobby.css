@@ -143,6 +143,7 @@
   border-radius: 5px;
   margin-right: 7px;
   align-self: baseline;
+  margin-top: 5px;
 }
 
 .lobby-chat-message-user {

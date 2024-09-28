@@ -3,8 +3,15 @@ import Header from "../../components/Header/Header";
 import "./Landing.css";
 import { FaAmazon, FaGoogle } from "react-icons/fa";
 import Logo from "../../assets/octopus.svg";
+import { useNavigate } from "react-router-dom";
 
 const Landing = () => {
+  const navigate = useNavigate();
+
+  const handleGetStartedClick = () => {
+    navigate("/login");
+  };
+
   return (
     <div className="landing-container">
       <Header />
@@ -29,7 +36,7 @@ const Landing = () => {
             </div>
           </div>
           <div className="landing-hero-cta">
-            <button className="landing-get-started-button">Get started</button>
+            <button className="landing-get-started-button" onClick={handleGetStartedClick}>Get started</button>
           </div>
         </div>
       </section>
@@ -73,7 +80,7 @@ const Landing = () => {
       <div className="landing-bottom-cta">
         <h1>Start practicing today</h1>
         <p>Join our growing community to start solving algorithmic problems today.</p>
-        <button className="landing-get-started-button">Get started</button>
+        <button className="landing-get-started-button" onClick={handleGetStartedClick}>Get started</button>
       </div>
 
       <footer className="landing-footer-container">
@@ -89,7 +96,7 @@ const Landing = () => {
           <div className="landing-footer-column">
             <header>Product</header>
             <a href="mailto:team@octree.io">Contact</a>
-            <a href="mailto:support@octree.io">Support</a>
+            <a href="mailto:team@octree.io">Support</a>
           </div>
 
           <div className="landing-footer-column">

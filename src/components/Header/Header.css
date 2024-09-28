@@ -1,6 +1,9 @@
 .header {
   height: 56px;
   border-bottom: 1px solid #edebec;
+  display: flex;
+  justify-content: space-between;
+  padding-right: 20px;
 }
 
 .header-content {
@@ -20,4 +23,43 @@
 .header-clickable {
   user-select: none;
   cursor: pointer;
+}
+
+.header-profile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.header-profile-icon {
+  width: 35px;
+  height: 35px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.header-profile-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 100;
+  width: 150px;
+}
+
+.header-dropdown-item {
+  padding: 5px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.header-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.header-dropdown-item:last-child {
+  border-bottom: none;
 }

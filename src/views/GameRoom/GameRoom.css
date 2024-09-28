@@ -123,11 +123,6 @@
   margin-top: 7px;
 }
 
-.game-room-user-profile {
-  border-radius: 5px;
-  object-fit: cover;
-}
-
 .game-room-user-name {
   font-weight: bold;
 }

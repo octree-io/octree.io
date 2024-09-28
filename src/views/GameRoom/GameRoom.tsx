@@ -193,7 +193,7 @@ const GameRoom = () => {
             <div className="game-room-user-list">
               <div className="game-room-user">
                 <div className="game-room-user-profile-wrapper">
-                  <img className="game-room-user-profile" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+                  <img className="user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
                 </div>
                 <div className="game-room-user-name">
                   User1
@@ -202,7 +202,7 @@ const GameRoom = () => {
 
               <div className="game-room-user">
                 <div className="game-room-user-profile-wrapper">
-                  <img className="game-room-user-profile" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
+                  <img className="user-profile-picture" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
                 </div>
                 <div className="game-room-user-name">
                   User2
@@ -232,7 +232,7 @@ const GameRoom = () => {
                   <div className="game-room-message-info">
                     <div className="game-room-message-content">
                       <div className="game-room-user-profile-wrapper chat-message">
-                        <img className="game-room-user-profile" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
+                        <img className="user-profile-picture" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
                       </div>
                       <div className="game-room-message-group">
                         <b>User2</b>
@@ -247,7 +247,7 @@ const GameRoom = () => {
                   <div className="game-room-message-info">
                     <div className="game-room-message-content">
                       <div className="game-room-user-profile-wrapper chat-message">
-                        <img className="game-room-user-profile" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+                        <img className="user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
                       </div>
                       <div className="game-room-message-group">
                         <b>User1</b>

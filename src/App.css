@@ -11,3 +11,9 @@
   overflow: auto;
   scrollbar-width: thin;
 }
+
+.user-profile-picture {
+  border-radius: 5px;
+  object-fit: cover;
+  border: 1px solid rgb(212, 212, 212);
+}

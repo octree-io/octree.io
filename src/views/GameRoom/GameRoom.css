@@ -231,3 +231,8 @@
   background-color: #f4f4f4;
   padding: 10px;
 }
+
+.game-room-chat-message-continuation {
+  padding-left: 52px;
+  padding-bottom: 10px;
+}

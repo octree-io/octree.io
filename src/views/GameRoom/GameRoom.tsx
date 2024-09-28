@@ -193,10 +193,10 @@ const GameRoom = () => {
             <div className="game-room-user-list">
               <div className="game-room-user">
                 <div className="game-room-user-profile-wrapper">
-                  <img className="user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+                  <img className="user-profile-picture" src="https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png" width={35} height={35}></img>
                 </div>
                 <div className="game-room-user-name">
-                  User1
+                  Bojack
                 </div>
               </div>
 
@@ -205,7 +205,7 @@ const GameRoom = () => {
                   <img className="user-profile-picture" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
                 </div>
                 <div className="game-room-user-name">
-                  User2
+                  Samoyed
                 </div>
               </div>
             </div>
@@ -216,14 +216,14 @@ const GameRoom = () => {
               <div className="game-room-chat-messages">
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div className="game-room-message-text">👋 <b>User1</b> joined the room</div>
+                    <div className="game-room-message-text">👋 <b>Bojack</b> joined the room</div>
                   </div>
                   <div className="game-room-chat-time">1:20 AM</div>
                 </div>
 
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div>👋 <b>User2</b> joined the room</div>
+                    <div>👋 <b>Samoyed</b> joined the room</div>
                   </div>
                   <div className="game-room-chat-time">1:21 AM</div>
                 </div>
@@ -235,7 +235,7 @@ const GameRoom = () => {
                         <img className="user-profile-picture" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
                       </div>
                       <div className="game-room-message-group">
-                        <b>User2</b>
+                        <b>Samoyed</b>
                         <div className="game-room-message-text">hello</div>
                       </div>
                     </div>
@@ -243,14 +243,18 @@ const GameRoom = () => {
                   <div className="game-room-chat-time">1:24 AM</div>
                 </div>
 
+                <div className="game-room-chat-message-continuation">
+                  Let's solve this problem together!
+                </div>
+
                 <div className="game-room-chat-message">
                   <div className="game-room-message-info">
                     <div className="game-room-message-content">
                       <div className="game-room-user-profile-wrapper chat-message">
-                        <img className="user-profile-picture" src="https://randomuser.me/api/portraits/lego/1.jpg" width={35} height={35}></img>
+                        <img className="user-profile-picture" src="https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png" width={35} height={35}></img>
                       </div>
                       <div className="game-room-message-group">
-                        <b>User1</b>
+                        <b>Bojack</b>
                         <div className="game-room-message-text">wasup</div>
                       </div>
                     </div>
@@ -258,16 +262,20 @@ const GameRoom = () => {
                   <div className="game-room-chat-time">1:24 AM</div>
                 </div>
 
+                <div className="game-room-chat-message-continuation">
+                  Let's play 8-ball! 🎱
+                </div>
+
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div className="game-room-message-text">❌<b>User1</b> submitted a wrong answer.</div>
+                    <div className="game-room-message-text">❌<b>Bojack</b> submitted a wrong answer.</div>
                   </div>
                   <div className="game-room-chat-time">1:25 AM</div>
                 </div>
 
                 <div className="game-room-chat-message game-room-system-message">
                   <div className="game-room-message-info">
-                    <div className="game-room-message-text">💯<b>User2</b> finished in 32ms in python!</div>
+                    <div className="game-room-message-text">💯<b>Samoyed</b> finished in 32ms in python!</div>
                   </div>
                   <div className="game-room-chat-time">1:26 AM</div>
                 </div>

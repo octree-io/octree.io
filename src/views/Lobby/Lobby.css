@@ -192,6 +192,7 @@
   visibility: hidden;
   margin-left: 10px;
   width: 50px;
+  text-align: center;
 }
 
 .lobby-userlist {

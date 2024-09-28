@@ -9,7 +9,7 @@ const Lobby = () => {
       <div className="lobby-content">
         <div className="lobby-sidebar">
           <div className="lobby-sidebar-text">
-            <h2 style={{ margin: 0, fontSize: "18px" }}>
+            <h2>
               Lobby
             </h2>
           </div>

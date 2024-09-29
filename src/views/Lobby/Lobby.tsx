@@ -2,7 +2,7 @@ import { io, Socket } from "socket.io-client";
 import Header from "../../components/Header/Header";
 import "./Lobby.css";
 import { useNavigate } from "react-router-dom";
-import React, { memo, useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import apiClient, { TokenExpiredError } from "../../client/APIClient";
 
 interface Message {
@@ -25,7 +25,10 @@ const MessageFormatter = memo(({ message }: { message: string }) => (
 
 const Lobby = () => {
   const navigate = useNavigate();
+
   const socketRef = useRef<Socket | null>(null);
+  const chatboxRef = useRef<HTMLDivElement>(null);
+
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<{ [username: string]: string }>({});
@@ -70,6 +73,12 @@ const Lobby = () => {
       hour12: true,
     });
   };
+
+  useLayoutEffect(() => {
+    if (chatboxRef.current) {
+      chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (socketRef.current) {
@@ -180,7 +189,7 @@ const Lobby = () => {
             <div># general</div>
           </div>
 
-          <div className="lobby-chat-area-messages">
+          <div className="lobby-chat-area-messages" ref={chatboxRef}>
             {messages.map((msg, index) => {
 
               const isContinuation = index > 0 && messages[index-1].username === msg.username;

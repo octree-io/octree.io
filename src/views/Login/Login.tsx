@@ -17,11 +17,15 @@ const Login = () => {
   };
 
   const handleGoogleSignin = async () => {
-    const result = await initiateGoogleOAuth(AuthType.SIGN_IN);
-    if (result) {
-      navigate("/home");
-    } else {
-      setError("Failed to login with Google");
+    try {
+      const result = await initiateGoogleOAuth(AuthType.SIGN_IN);
+
+      if (result === true) {
+        navigate("/home");
+      }
+    } catch (error: any) {
+      console.log("[handleGoogleSignin] OAuth failed", error);
+      setError(error);
     }
   };
 

@@ -11,7 +11,7 @@ export function initiateGoogleOAuth(authType: AuthType): Promise<boolean> {
       callback: (response: any) => {
         if (response.error) {
           console.error('OAuth2 Error:', response.error);
-          return reject(false);
+          return reject(response.error);
         }
 
         const tokenEndpoint = authType === AuthType.SIGN_IN 
@@ -26,11 +26,21 @@ export function initiateGoogleOAuth(authType: AuthType): Promise<boolean> {
           body: JSON.stringify({ token: response.access_token }),
           credentials: "include",
         })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) { 
+            return res.json().then(err => {
+              console.error('Backend Error:', err);
+              reject(err.message || 'An error occurred');
+            }).catch(() => {
+              reject('Failed to parse error response');
+            });
+          }
+          return res.json();
+        })
         .then(data => {
           if (data.error) {
             console.error('Backend Error:', data.error);
-            return reject(false);
+            return reject(data.error);
           }
 
           localStorage.setItem("token", data.accessToken);
@@ -38,7 +48,7 @@ export function initiateGoogleOAuth(authType: AuthType): Promise<boolean> {
         })
         .catch(err => {
           console.error('Fetch Error:', err);
-          reject(false);
+          reject(err.message || 'An error occurred while fetching');
         });
       }
     }).requestAccessToken();

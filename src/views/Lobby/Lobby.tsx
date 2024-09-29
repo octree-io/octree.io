@@ -33,19 +33,35 @@ const Lobby = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<{ [username: string]: string }>({});
 
-  const refreshAccessToken = async () => {
-    try {
-      const response: any = await apiClient.get("/auth/refresh-token");
-      const { accessToken } = response;
-      localStorage.setItem("token", accessToken);
-      return true;
-    } catch (e) {
-      if (e instanceof TokenExpiredError) {
-        navigate("/login");
-        return false;
+  const refreshAccessToken = async (): Promise<string | false> => {
+    let retries = 3;
+    let delay = 1000;
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response: any = await apiClient.get("/auth/refresh-token");
+        const { accessToken } = response;
+        localStorage.setItem("token", accessToken);
+        return accessToken;
+      } catch (e) {
+        console.log(`[Lobby][refreshAccessToken] Attempt ${attempt} failed to refresh token, retrying`, e);
+
+        if (e instanceof TokenExpiredError) {
+          navigate("/login");
+          return false;
+        }
+
+        if (attempt === retries) {
+          return false;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
+        delay *= 2;
       }
-      return false;
     }
+
+    return false;
   };
 
   const handleSendMessage = () => {
@@ -74,6 +90,64 @@ const Lobby = () => {
     });
   };
 
+  const registerSocketEventListeners = (socket: Socket) => {
+    socket.on("welcome", (data) => {
+      console.log("Got welcome");
+      console.log(data);
+    });
+
+    socket.on("currentUsers", (data) => {
+      console.log("Got currentUsers");
+      const currentUsers = data.reduce((acc: any, user: any) => {
+        acc[user.username] = user.profilePic;
+        return acc;
+      }, {});
+
+      setUsers(currentUsers);
+    });
+
+    socket.on("userJoined", (data) => {
+      console.log("Got userJoined");
+      setUsers((prevUsers) => {
+        if (!prevUsers[data.username]) {
+          return { ...prevUsers, [data.username]: data.profilePic };
+        }
+        return prevUsers;
+      });
+    });
+
+    socket.on("userLeft", (data) => {
+      console.log("Got userLeft", data);
+      setUsers((prevUsers) => {
+        const updatedUsers = { ...prevUsers };
+        delete updatedUsers[data.username];
+        return updatedUsers;
+      });
+    });
+
+    socket.on("chatMessage", (data) => {
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, data];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
+    });
+
+    socket.on("tokenExpired", async () => {
+      console.log("Token expired, refreshing...");
+      const newToken = await refreshAccessToken();
+      if (newToken && socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = io(import.meta.env.VITE_API_URL + "/lobby", {
+          auth: {
+            token: newToken,
+          },
+        });
+
+        registerSocketEventListeners(socketRef.current);
+      }
+    });
+  };
+
   useLayoutEffect(() => {
     if (chatboxRef.current) {
       chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
@@ -99,59 +173,7 @@ const Lobby = () => {
       },
     });
 
-    socketRef.current.on("welcome", (data) => {
-      console.log("Got welcome");
-      console.log(data);
-    });
-
-    socketRef.current.on("currentUsers", (data) => {
-      console.log("Got currentUsers");
-      const currentUsers = data.reduce((acc: any, user: any) => {
-        acc[user.username] = user.profilePic;
-        return acc;
-      }, {});
-
-      setUsers(currentUsers);
-    });
-
-    socketRef.current.on("userJoined", (data) => {
-      console.log("Got userJoined");
-      setUsers((prevUsers) => {
-        if (!prevUsers[data.username]) {
-          return { ...prevUsers, [data.username]: data.profilePic };
-        }
-        return prevUsers;
-      });
-    });
-
-    socketRef.current.on("userLeft", (data) => {
-      console.log("Got userLeft", data);
-      setUsers((prevUsers) => {
-        const updatedUsers = { ...prevUsers };
-        delete updatedUsers[data.username];
-        return updatedUsers;
-      });
-    });
-
-    socketRef.current.on("chatMessage", (data) => {
-      setMessages((prevMessages) => {
-        const updatedMessages = [...prevMessages, data];
-        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
-      });
-    });
-
-    socketRef.current.on("tokenExpired", async () => {
-      console.log("Token expired, refreshing...");
-      const newToken = await refreshAccessToken();
-      if (newToken && socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = io(import.meta.env.VITE_API_URL + "/lobby", {
-          auth: {
-            token: newToken,
-          },
-        });
-      }
-    });
+    registerSocketEventListeners(socketRef.current);
 
     return () => {
       if (socketRef.current) {

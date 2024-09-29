@@ -4,6 +4,7 @@ import "./Lobby.css";
 import { useNavigate } from "react-router-dom";
 import React, { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import apiClient, { TokenExpiredError } from "../../client/APIClient";
+import Modal from "../../components/Modal/Modal";
 
 interface Message {
   username: string;
@@ -32,6 +33,15 @@ const Lobby = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<{ [username: string]: string }>({});
+  const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
+
+  const openCreateRoomModal = () => {
+    setIsCreateRoomModalOpen(true);
+  };
+
+  const closeCreateRoomModal = () => {
+    setIsCreateRoomModalOpen(false);
+  };
 
   const refreshAccessToken = async (): Promise<string | false> => {
     let retries = 3;
@@ -275,7 +285,7 @@ const Lobby = () => {
             <div className="lobby-rooms">
             </div>
             <div className="lobby-room-buttons">
-              <button>Create Room</button>
+              <button onClick={openCreateRoomModal}>Create Room</button>
             </div>
           </div>
 
@@ -295,6 +305,15 @@ const Lobby = () => {
 
         </div>
       </div>
+
+      <Modal isOpen={isCreateRoomModalOpen} onClose={closeCreateRoomModal}>
+        <div>
+          <h1>Create a room</h1>
+          <hr />
+          <p>Options</p>
+          <button>Create room</button>
+        </div>
+      </Modal>
     </div>
   );
 }

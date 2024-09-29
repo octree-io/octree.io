@@ -3,7 +3,7 @@ import "./Login.css";
 import Logo from "../../assets/octopus.svg";
 import { useNavigate } from "react-router-dom";
 import { AuthType, initiateGoogleOAuth } from "../../helper/googleOAuthHelper";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import apiClient from "../../client/APIClient";
 
 const Login = () => {
@@ -46,6 +46,13 @@ const Login = () => {
       setError('Invalid username or password');
     }
   };
+
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/home");
+      return;
+    }
+  }, []);
 
   return (
     <div className="login-container">

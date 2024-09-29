@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "../../components/Header/Header";
 import "./Signup.css";
 import Logo from "../../assets/octopus.svg";
@@ -47,6 +47,13 @@ const Signup = () => {
       setError('Signup failed. Please try again.');
     }
   };
+
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/home");
+      return;
+    }
+  }, []);
 
   return (
     <div className="signup-container">

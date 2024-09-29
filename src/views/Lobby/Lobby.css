@@ -180,10 +180,12 @@
 .lobby-chat-message-content-continuation {
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .lobby-chat-message-text-continuation {
   padding-right: 5px;
+  white-space: pre-wrap;
 }
 
 .lobby-chat-message-user-timestamp-continuation {

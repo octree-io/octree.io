@@ -182,9 +182,9 @@
   align-items: center;
 }
 
-/* .lobby-chat-message-text-continuation {
-  margin-left: 9px;
-} */
+.lobby-chat-message-text-continuation {
+  padding-right: 5px;
+}
 
 .lobby-chat-message-user-timestamp-continuation {
   color: gray;

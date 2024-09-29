@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Header from "../../components/Header/Header";
 import "./Settings.css";
 import { isTokenValid } from "../../helper/tokenValidation";
@@ -15,6 +15,7 @@ const Settings = () => {
   const [desiredUsername, setDesiredUsername] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const navigate = useNavigate();
 
@@ -31,8 +32,21 @@ const Settings = () => {
     }
   };
 
-  const changeUsername = () => {
+  const changeUsername = async () => {
     setError(null);
+
+    if (desiredUsername === "") {
+      setError("Desired username cannot be blank.");
+      return;
+    }
+
+    try {
+      await apiClient.post("/auth/change-username", { desiredUsername });
+
+      refreshToken();
+    } catch (error: any) {
+      setError(error.response.data.message || "Failed to change username.");
+    }
   };
 
   const changeProfilePic = async () => {
@@ -64,6 +78,11 @@ const Settings = () => {
     });
 
     refreshToken();
+
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   useEffect(() => {
@@ -115,6 +134,7 @@ const Settings = () => {
                     }
                   }
                 }}
+                ref={fileInputRef}
               />
               <button className="settings-button" onClick={changeProfilePic}>Upload</button>
             </div>

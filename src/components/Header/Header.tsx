@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { jwtDecode } from "jwt-decode";
 import apiClient, { TokenExpiredError } from "../../client/APIClient";
+import { isTokenValid } from "../../helper/tokenValidation";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -32,18 +33,6 @@ const Header = () => {
 
   const handleSettings = () => {
     navigate("/settings");
-  };
-
-  const isTokenValid = (token: string | null): boolean => {
-    if (!token) return false;
-
-    try {
-      const decodedToken: any = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      return decodedToken.exp > currentTime;
-    } catch (error) {
-      return false;
-    }
   };
 
   const refreshToken = async () => {

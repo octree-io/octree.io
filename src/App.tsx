@@ -6,6 +6,7 @@ import Lobby from './views/Lobby/Lobby';
 import Landing from './views/Landing/Landing';
 import Login from './views/Login/Login';
 import Signup from './views/Signup/Signup';
+import Settings from './views/Settings/Settings';
 
 const App = () => {
   return (
@@ -16,6 +17,7 @@ const App = () => {
         <Route path="/room" element={<GameRoom />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>
   )

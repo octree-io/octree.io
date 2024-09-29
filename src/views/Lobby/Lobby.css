@@ -191,7 +191,7 @@
   font-size: 10px;
   visibility: hidden;
   margin-left: 10px;
-  width: 50px;
+  flex: 0 0 50px;
   text-align: center;
 }
 

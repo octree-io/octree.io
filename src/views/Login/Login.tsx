@@ -24,7 +24,7 @@ const Login = () => {
         navigate("/home");
       }
     } catch (error: any) {
-      console.log("[handleGoogleSignin] OAuth failed", error);
+      console.log("[handleGoogleSignin] OAuth login failed: ", error);
       setError(error);
     }
   };

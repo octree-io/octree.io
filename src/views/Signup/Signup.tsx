@@ -19,9 +19,14 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = async () => {
-    const result = await initiateGoogleOAuth(AuthType.SIGN_UP);
-    if (result) {
-      navigate("/home");
+    try {
+      const result = await initiateGoogleOAuth(AuthType.SIGN_UP);
+      if (result === true) {
+        navigate("/home");
+      }
+    } catch (error: any) {
+      console.log("[handleGoogleSignup] OAuth signup failed: ", error); 
+      setError(error);
     }
   };
 

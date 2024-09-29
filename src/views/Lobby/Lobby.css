@@ -290,3 +290,23 @@
 .lobby-room-buttons button:hover {
   background-color: #b68cec;
 }
+
+.lobby-create-room-modal h1 {
+  margin: 0;
+}
+
+.lobby-create-room-modal button {
+  background-color: #9266cc;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 7px;
+  width: 125px;
+}
+
+.lobby-create-room-modal button:hover {
+  background-color: #b68cec;
+}

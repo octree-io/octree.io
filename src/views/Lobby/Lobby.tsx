@@ -307,10 +307,9 @@ const Lobby = () => {
       </div>
 
       <Modal isOpen={isCreateRoomModalOpen} onClose={closeCreateRoomModal}>
-        <div>
+        <div className="lobby-create-room-modal">
           <h1>Create a room</h1>
           <hr />
-          <p>Options</p>
           <button>Create room</button>
         </div>
       </Modal>

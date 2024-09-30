@@ -1,0 +1,28 @@
+.room-not-found-container {
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.room-not-found-main-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.room-not-found-footer {
+  text-align: center;
+  padding: 15px;
+  font-size: 14px;
+}
+
+.room-not-found-footer a {
+  text-decoration: none;
+  color: black;
+  margin: 0 10px;
+}
+
+.room-not-found-footer a:hover {
+  text-decoration: underline;
+}

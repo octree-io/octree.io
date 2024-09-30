@@ -6,6 +6,7 @@ import Header from "../../components/Header/Header";
 import "./GameRoom.css";
 import { useRef, useState } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
@@ -19,6 +20,9 @@ const GameRoom = () => {
   });
 
   const editorRef = useRef<any>(null);
+  const { roomId } = useParams();
+
+  console.log("Room ID:", roomId);
 
   function handleEditorWillMount(monaco: any) {
     // Register the OCaml language

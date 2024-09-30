@@ -170,9 +170,7 @@
 }
 
 .game-room-chat-time {
-  position: absolute;
-  top: 5px;
-  right: 7px;
+  flex: 0 0 10px;
   font-size: 13px;
   color: gray;
   white-space: nowrap;

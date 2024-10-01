@@ -36,6 +36,8 @@ const Lobby = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<{ [username: string]: string }>({});
   const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
   const openCreateRoomModal = () => {
     setIsCreateRoomModalOpen(true);
@@ -60,11 +62,6 @@ const Lobby = () => {
   };
 
   const registerSocketEventListeners = (socket: Socket) => {
-    socket.on("welcome", (data) => {
-      console.log("Got welcome");
-      console.log(data);
-    });
-
     socket.on("currentUsers", (data) => {
       console.log("Got currentUsers");
       const currentUsers = data.reduce((acc: any, user: any) => {
@@ -101,6 +98,10 @@ const Lobby = () => {
       });
     });
 
+    socket.on("activeRooms", (activeRooms) => {
+      setRooms(activeRooms);
+    });
+
     socket.on("tokenExpired", async () => {
       console.log("Token expired, refreshing...");
       const newToken = await refreshAccessToken();
@@ -124,6 +125,14 @@ const Lobby = () => {
     setTimeout(() => {
       navigate(`/room/${roomId}`);
     }, 100);
+  };
+
+  const handleRoomClick = (roomId: string) => {
+    setActiveRoomId(roomId);
+  };
+
+  const handleJoinRoom = () => {
+    navigate(`/room/${activeRoomId}`);
   };
 
   useLayoutEffect(() => {
@@ -252,14 +261,26 @@ const Lobby = () => {
           <div className="lobby-roomlist">
             <div className="lobby-roomlist-header">Rooms</div>
             <div className="lobby-rooms">
+              {rooms.map((room, index) => (
+                <div
+                  key={index}
+                  className={`lobby-room ${room.roomId === activeRoomId ? "active-room" : ""}`}
+                  onClick={() => handleRoomClick(room.roomId)}
+                >
+                  {room.roomId}
+                </div>
+              ))}
             </div>
             <div className="lobby-room-buttons">
+              {activeRoomId !== null && (
+                <button onClick={handleJoinRoom}>Join Room</button>
+              )}
               <button onClick={openCreateRoomModal}>Create Room</button>
             </div>
           </div>
 
           <div>
-            <div className="lobby-users-text">Users</div>
+            <div className="lobby-users-text">Users - {Object.keys(users).length}</div>
             <div className="lobby-users">
               {Object.entries(users).map(([username, profilePic], index) => (
                 <div key={index} className="lobby-user">

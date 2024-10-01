@@ -305,7 +305,7 @@ const Lobby = () => {
         <div className="lobby-create-room-modal">
           <h1>Create a room</h1>
           <hr />
-          <div>
+          <div className="lobby-create-room-modal-room-name">
             <label>Room name:</label>
             <input
               name="roomName"

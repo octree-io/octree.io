@@ -310,3 +310,21 @@
 .lobby-create-room-modal button:hover {
   background-color: #b68cec;
 }
+
+.lobby-create-room-modal-room-name {
+  padding: 15px 0;
+}
+
+.lobby-create-room-modal-room-name label {
+  margin-right: 10px;
+}
+
+.lobby-create-room-modal-room-name input {
+  border: 2px solid #ebebeb;
+  transition: 0.3s all;
+}
+
+.lobby-create-room-modal-room-name input:focus {
+  outline: none;
+  border: 2px solid #9266cc;
+}

@@ -4,9 +4,11 @@ import { ocamlLanguageConfiguration, ocamlTokensProvider } from "../../config/oc
 import "allotment/dist/style.css";
 import Header from "../../components/Header/Header";
 import "./GameRoom.css";
-import { useRef, useState } from "react";
+import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
+import { formatTimestamp } from "../../helper/stringHelpers";
 
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
@@ -18,11 +20,15 @@ const GameRoom = () => {
     execTime: "",
     timedOut: false
   });
+  const [users, setUsers] = useState<{ [username: string]: string }>({});
+  const [messages, setMessages] = useState<any[]>([]);
+  const [message, setMessage] = useState<string>("");
 
+  const navigate = useNavigate();
+  const socketRef = useRef<Socket | null>(null);
   const editorRef = useRef<any>(null);
+  const chatboxRef = useRef<HTMLDivElement>(null);
   const { roomId } = useParams();
-
-  console.log("Room ID:", roomId);
 
   function handleEditorWillMount(monaco: any) {
     // Register the OCaml language
@@ -96,6 +102,207 @@ const GameRoom = () => {
       }
     }
   };
+
+  const registerSocketEventListeners = (socket: Socket) => {
+    socket.on("welcome", () => {
+      socket.emit("joinRoom", roomId);
+    });
+
+    socket.on("noSuchRoom", () => {
+      navigate("/room-not-found");
+    });
+
+    socket.on("currentUsers", (data) => {
+      console.log("Got currentUsers");
+      const currentUsers = data.reduce((acc: any, user: any) => {
+        acc[user.username] = user.profilePic;
+        return acc;
+      }, {});
+
+      setUsers(currentUsers);
+    });
+
+    socket.on("chatMessage", (data) => {
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, data];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
+    });
+
+    socket.on("userJoined", (data) => {
+      console.log("Got userJoined");
+      setUsers((prevUsers) => {
+        if (!prevUsers[data.username]) {
+          return { ...prevUsers, [data.username]: data.profilePic };
+        }
+        return prevUsers;
+      });
+
+      const systemJoinMessage = {
+        message: "has joined the room!",
+        username: data.username,
+        prefixEmoji: "👋",
+        type: "system",
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, systemJoinMessage];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
+    });
+
+    socket.on("userLeft", (data) => {
+      console.log("Got userLeft", data);
+      setUsers((prevUsers) => {
+        const updatedUsers = { ...prevUsers };
+        delete updatedUsers[data.username];
+        return updatedUsers;
+      });
+
+      const systemJoinMessage = {
+        message: "has left the room!",
+        username: data.username,
+        prefixEmoji: "🚪",
+        type: "system",
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, systemJoinMessage];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
+    });
+  };
+
+  // TODO: Refactor
+  const MessageFormatter = memo(({ message }: { message: string }) => (
+    <div>
+      {message.split("\n").map((line, index) => (
+        <Fragment key={index}>
+          {line}
+          <br />
+        </Fragment>
+      ))}
+    </div>
+  ));
+
+  const UserMessage = memo((
+    { username, profilePic, message, timestamp }: { username: string, profilePic: string, message: string, timestamp: string }
+  ) => {
+    return (
+      <div className="game-room-chat-message">
+        <div className="game-room-message-info">
+          <div className="game-room-message-content">
+            <div className="game-room-user-profile-wrapper chat-message">
+              <img className="user-profile-picture" src={profilePic} width={35} height={35} />
+            </div>
+            <div className="game-room-message-group">
+              <b>{username}</b>
+              <div className="game-room-message-text">
+                <MessageFormatter message={message} />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="game-room-chat-time">{formatTimestamp(timestamp)}</div>
+      </div>
+    );
+  });
+
+  const SystemMessage = memo(({ prefixEmoji, username, message, timestamp }: { prefixEmoji: string, username: string, message: string, timestamp: string }) => {
+    return (
+      <div className="game-room-chat-message game-room-system-message">
+        <div className="game-room-message-info">
+          <div className="game-room-message-text">
+            {prefixEmoji} <b>{username}</b> {message}
+          </div>
+        </div>
+        <div className="game-room-chat-time">{formatTimestamp(timestamp)}</div>
+      </div>
+    );
+  });
+
+  const ContinuationMessage = memo(({ message }: { message: string }) => {
+    return (
+      <div className="game-room-chat-message-continuation">
+        <MessageFormatter message={message} />
+      </div>
+    );
+  });
+
+  const renderMessages = () => {
+    return messages.map((msg, index) => {
+      if (msg.type === "system") {
+        return <SystemMessage key={index} prefixEmoji={msg.prefixEmoji} username={msg.username} message={msg.message} timestamp={msg.timestamp} />;
+      }
+
+      const isContinuation = index > 0 && messages[index - 1].type !== "system" && messages[index - 1].username === msg.username;
+
+      if (isContinuation) {
+        return <ContinuationMessage key={index} message={msg.message} />;
+      }
+
+      return (
+        <UserMessage
+          key={index}
+          username={msg.username}
+          profilePic={msg.profilePic}
+          message={msg.message}
+          timestamp={msg.timestamp}
+        />
+      );
+    });
+  };
+
+  const handleSendMessage = () => {
+    if (message.trim() !== "") {
+      socketRef.current?.emit("message", message);
+      setMessage("");
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (chatboxRef.current) {
+      chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (socketRef.current) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.log("[Game Room] Invalid token");
+      navigate("/login");
+      return;
+    }
+
+    socketRef.current = io(import.meta.env.VITE_API_URL + "/gameRoom", {
+      auth: {
+        token
+      },
+    });
+
+    registerSocketEventListeners(socketRef.current);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [navigate]);
 
   return (
     <div className="game-room">
@@ -195,101 +402,34 @@ const GameRoom = () => {
         <Allotment.Pane preferredSize="25%" maxSize={400}>
           <div className="pane">
             <div className="game-room-user-list">
-              <div className="game-room-user">
-                <div className="game-room-user-profile-wrapper">
-                  <img className="user-profile-picture" src="https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png" width={35} height={35}></img>
-                </div>
-                <div className="game-room-user-name">
-                  Bojack
-                </div>
-              </div>
 
-              <div className="game-room-user">
+            {Object.entries(users).map(([username, profilePic], index) => (
+              <div key={index} className="game-room-user">
                 <div className="game-room-user-profile-wrapper">
-                  <img className="user-profile-picture" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
+                  <img className="user-profile-picture" src={profilePic} width={35} height={35} />
                 </div>
                 <div className="game-room-user-name">
-                  Samoyed
+                  {username}
                 </div>
               </div>
+            ))}
+
             </div>
 
             <hr className="game-room-divider" />
 
             <div className="game-room-chat-container">
-              <div className="game-room-chat-messages">
-                <div className="game-room-chat-message game-room-system-message">
-                  <div className="game-room-message-info">
-                    <div className="game-room-message-text">👋 <b>Bojack</b> joined the room</div>
-                  </div>
-                  <div className="game-room-chat-time">1:20 AM</div>
-                </div>
-
-                <div className="game-room-chat-message game-room-system-message">
-                  <div className="game-room-message-info">
-                    <div>👋 <b>Samoyed</b> joined the room</div>
-                  </div>
-                  <div className="game-room-chat-time">1:21 AM</div>
-                </div>
-
-                <div className="game-room-chat-message">
-                  <div className="game-room-message-info">
-                    <div className="game-room-message-content">
-                      <div className="game-room-user-profile-wrapper chat-message">
-                        <img className="user-profile-picture" src="https://images.ctfassets.net/440y9b545yd9/49v1AZmZdiPYkJ4A3vrayj/d7d7db21fed2ef30f5b8e3899633d292/Samoyed850.jpg" width={35} height={35}></img>
-                      </div>
-                      <div className="game-room-message-group">
-                        <b>Samoyed</b>
-                        <div className="game-room-message-text">hello</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="game-room-chat-time">1:24 AM</div>
-                </div>
-
-                <div className="game-room-chat-message-continuation">
-                  Let's solve this problem together!
-                </div>
-
-                <div className="game-room-chat-message">
-                  <div className="game-room-message-info">
-                    <div className="game-room-message-content">
-                      <div className="game-room-user-profile-wrapper chat-message">
-                        <img className="user-profile-picture" src="https://theeasterner.org/wp-content/uploads/2021/05/Bojack_Horseman.png" width={35} height={35}></img>
-                      </div>
-                      <div className="game-room-message-group">
-                        <b>Bojack</b>
-                        <div className="game-room-message-text">wasup</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="game-room-chat-time">1:24 AM</div>
-                </div>
-
-                <div className="game-room-chat-message-continuation">
-                  Let's play 8-ball! 🎱
-                </div>
-
-                <div className="game-room-chat-message game-room-system-message">
-                  <div className="game-room-message-info">
-                    <div className="game-room-message-text">❌<b>Bojack</b> submitted a wrong answer.</div>
-                  </div>
-                  <div className="game-room-chat-time">1:25 AM</div>
-                </div>
-
-                {/* TODO: Maybe the timestamp and text is better handled with flex */}
-                <div className="game-room-chat-message game-room-system-message">
-                  <div className="game-room-message-info">
-                    <div className="game-room-message-text">💯<b>Samoyed</b> finished in 32ms in python!</div>
-                  </div>
-                  <div className="game-room-chat-time">1:26 AM</div>
-                </div>
+              <div className="game-room-chat-messages" ref={chatboxRef}>
+                {renderMessages()}
               </div>
 
               <textarea
                 className="game-room-chat-input"
                 placeholder="Send a message"
                 maxLength={2000}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
             </div>
           </div>

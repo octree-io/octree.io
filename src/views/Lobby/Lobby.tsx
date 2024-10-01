@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import React, { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Modal from "../../components/Modal/Modal";
 import { refreshAccessToken } from "../../helper/refreshAccessToken";
+import apiClient from "../../client/APIClient";
+import { formatTimestamp } from "../../helper/stringHelpers";
 
 interface Message {
   username: string;
@@ -55,18 +57,6 @@ const Lobby = () => {
       event.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const formatTimestamp = (timestamp: string | undefined): string => {
-    if (!timestamp) {
-      return "";
-    }
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true,
-    });
   };
 
   const registerSocketEventListeners = (socket: Socket) => {
@@ -125,6 +115,15 @@ const Lobby = () => {
         registerSocketEventListeners(socketRef.current);
       }
     });
+  };
+
+  const handleCreateRoom = async () => {
+    const response: any = await apiClient.post("/game-room", {});
+    const { roomId } = response;
+  
+    setTimeout(() => {
+      navigate(`/room/${roomId}`);
+    }, 100);
   };
 
   useLayoutEffect(() => {
@@ -190,6 +189,7 @@ const Lobby = () => {
             <div># general</div>
           </div>
 
+          {/* TODO: Memoize the messages so they don't all re-render */}
           <div className="lobby-chat-area-messages" ref={chatboxRef}>
             {messages.map((msg, index) => {
 
@@ -279,7 +279,7 @@ const Lobby = () => {
         <div className="lobby-create-room-modal">
           <h1>Create a room</h1>
           <hr />
-          <button>Create room</button>
+          <button onClick={handleCreateRoom}>Create room</button>
         </div>
       </Modal>
     </div>

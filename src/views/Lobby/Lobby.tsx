@@ -38,6 +38,7 @@ const Lobby = () => {
   const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
   const [rooms, setRooms] = useState<any[]>([]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [roomName, setRoomName] = useState<string>("");
 
   const openCreateRoomModal = () => {
     setIsCreateRoomModalOpen(true);
@@ -119,9 +120,13 @@ const Lobby = () => {
   };
 
   const handleCreateRoom = async () => {
-    const response: any = await apiClient.post("/game-room", {});
+    if (!roomName) {
+      return;
+    }
+
+    const response: any = await apiClient.post("/game-room", { roomName });
     const { roomId } = response;
-  
+
     setTimeout(() => {
       navigate(`/room/${roomId}`);
     }, 100);
@@ -267,7 +272,7 @@ const Lobby = () => {
                   className={`lobby-room ${room.roomId === activeRoomId ? "active-room" : ""}`}
                   onClick={() => handleRoomClick(room.roomId)}
                 >
-                  {room.roomId}
+                  {room.roomName}
                 </div>
               ))}
             </div>
@@ -300,6 +305,13 @@ const Lobby = () => {
         <div className="lobby-create-room-modal">
           <h1>Create a room</h1>
           <hr />
+          <div>
+            <label>Room name:</label>
+            <input
+              name="roomName"
+              onChange={(e) => setRoomName(e.target.value)}
+            />
+          </div>
           <button onClick={handleCreateRoom}>Create room</button>
         </div>
       </Modal>

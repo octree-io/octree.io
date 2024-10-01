@@ -151,7 +151,6 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 5px;
   padding: 5px 10px;
   position: relative;
 }
@@ -232,5 +231,5 @@
 
 .game-room-chat-message-continuation {
   padding-left: 52px;
-  padding-bottom: 10px;
+  padding-bottom: 5px;
 }

@@ -9,6 +9,7 @@ import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { formatTimestamp } from "../../helper/stringHelpers";
+import { refreshAccessToken } from "../../helper/refreshAccessToken";
 
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
@@ -172,6 +173,21 @@ const GameRoom = () => {
         const updatedMessages = [...prevMessages, systemJoinMessage];
         return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
       });
+    });
+
+    socket.on("tokenExpired", async () => {
+      console.log("Token expired, refreshing...");
+      const newToken = await refreshAccessToken();
+      if (newToken && socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = io(import.meta.env.VITE_API_URL + "/lobby", {
+          auth: {
+            token: newToken,
+          },
+        });
+
+        registerSocketEventListeners(socketRef.current);
+      }
     });
   };
 

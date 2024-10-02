@@ -7,6 +7,7 @@ import Modal from "../../components/Modal/Modal";
 import { refreshAccessToken } from "../../helper/refreshAccessToken";
 import apiClient from "../../client/APIClient";
 import { formatTimestamp } from "../../helper/stringHelpers";
+import { MessageFormatter } from "../../components/MessageFormatter";
 
 interface Message {
   username: string;
@@ -14,17 +15,6 @@ interface Message {
   message: string;
   timestamp?: string;
 }
-
-const MessageFormatter = memo(({ message }: { message: string }) => (
-  <div>
-    {message.split("\n").map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        <br />
-      </React.Fragment>
-    ))}
-  </div>
-));
 
 const Lobby = () => {
   const navigate = useNavigate();

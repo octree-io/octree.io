@@ -4,12 +4,13 @@ import { ocamlLanguageConfiguration, ocamlTokensProvider } from "../../config/oc
 import "allotment/dist/style.css";
 import Header from "../../components/Header/Header";
 import "./GameRoom.css";
-import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { formatTimestamp } from "../../helper/stringHelpers";
 import { refreshAccessToken } from "../../helper/refreshAccessToken";
+import { MessageFormatter } from "../../components/MessageFormatter";
 
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
@@ -190,18 +191,6 @@ const GameRoom = () => {
       }
     });
   };
-
-  // TODO: Refactor
-  const MessageFormatter = memo(({ message }: { message: string }) => (
-    <div>
-      {message.split("\n").map((line, index) => (
-        <Fragment key={index}>
-          {line}
-          <br />
-        </Fragment>
-      ))}
-    </div>
-  ));
 
   const UserMessage = memo((
     { username, profilePic, message, timestamp }: { username: string, profilePic: string, message: string, timestamp: string }

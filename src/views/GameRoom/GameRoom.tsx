@@ -179,6 +179,18 @@ const GameRoom = () => {
     });
 
     socket.on("nextRoundStarted", (data) => {
+      const systemJoinMessage = {
+        message: "The next round has started!",
+        username: "",
+        prefixEmoji: "🚀",
+        type: "system",
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, systemJoinMessage];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
       setRoundData(data);
     });
 

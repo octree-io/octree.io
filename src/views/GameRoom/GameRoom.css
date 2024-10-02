@@ -162,6 +162,7 @@
 
 .game-room-chat-message.game-room-system-message {
   background-color: #f7f7f7;
+  margin-bottom: 7px;
 }
 
 .game-room-message-text {

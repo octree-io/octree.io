@@ -9,7 +9,11 @@ const Landing = () => {
   const navigate = useNavigate();
 
   const handleGetStartedClick = () => {
-    navigate("/login");
+    if (localStorage.getItem("token")) {
+      navigate("/home");
+    } else {
+      navigate("/login");
+    }
   };
 
   return (

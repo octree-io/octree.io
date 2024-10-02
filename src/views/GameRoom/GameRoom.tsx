@@ -11,6 +11,7 @@ import { io, Socket } from "socket.io-client";
 import { formatTimestamp } from "../../helper/stringHelpers";
 import { refreshAccessToken } from "../../helper/refreshAccessToken";
 import { MessageFormatter } from "../../components/MessageFormatter";
+import GameRoomCountdownTimer from "../../components/GameRoom/GameRoomCountdownTimer";
 
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
@@ -25,6 +26,7 @@ const GameRoom = () => {
   const [users, setUsers] = useState<{ [username: string]: string }>({});
   const [messages, setMessages] = useState<any[]>([]);
   const [message, setMessage] = useState<string>("");
+  const [roundData, setRoundData] = useState<{ roomId: string, currentRoundStartTime: number, roundDuration: number } | null>(null);
 
   const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
@@ -174,6 +176,10 @@ const GameRoom = () => {
         const updatedMessages = [...prevMessages, systemJoinMessage];
         return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
       });
+    });
+
+    socket.on("nextRoundStarted", (data) => {
+      setRoundData(data);
     });
 
     socket.on("tokenExpired", async () => {
@@ -362,7 +368,12 @@ const GameRoom = () => {
                 />
 
                 <div className="game-room-editor-controls">
-                  <div className="game-room-timer">15:00</div>
+                  {roundData && 
+                    <GameRoomCountdownTimer
+                      currentRoundStartTime={roundData.currentRoundStartTime}
+                      roundDuration={roundData.roundDuration}
+                    />
+                  }
                   <div className="game-room-button-container">
                     <div 
                     className={`game-room-button game-room-run-button ${isRunLoading ? 'disabled' : ''}`} 

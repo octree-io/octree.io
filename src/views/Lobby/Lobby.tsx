@@ -97,6 +97,11 @@ const Lobby = () => {
       setRooms((prevRooms) => [...prevRooms, data]);
     });
 
+    socket.on("gameRoomDeleted", (data) => {
+      const roomId = data.roomId;
+      setRooms((prevRooms) => prevRooms.filter((room) => room.roomId !== roomId));
+    });
+
     socket.on("tokenExpired", async () => {
       console.log("Token expired, refreshing...");
       const newToken = await refreshAccessToken();

@@ -144,6 +144,76 @@ const Lobby = () => {
     navigate(`/room/${activeRoomId}`);
   };
 
+  const UserMessage = memo((
+    { username, profilePic, message, timestamp }: { username: string, profilePic: string, message: string, timestamp: string | undefined }
+  ) => {
+    return (
+      <div className="lobby-chat-message-container">
+        <div className="lobby-chat-message">
+          <div className="lobby-chat-message-avatar">
+            <img
+              className="user-profile-picture"
+              src={profilePic}
+              width={35}
+              height={35}
+              alt={username}
+            />
+          </div>
+
+          <div className="lobby-chat-message-content">
+            <div className="lobby-chat-message-user">
+              <div className="lobby-chat-message-user-username">{username}</div>
+              <div className="lobby-chat-message-user-timestamp">{formatTimestamp(timestamp)}</div>
+            </div>
+            <div className="lobby-chat-message-text">
+              <MessageFormatter message={message} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  });
+
+  const UserContinuationMessage = memo(({ message, timestamp }: { message: string, timestamp: string | undefined }) => {
+    return (
+      <div className="lobby-chat-message-container">
+        <div className="lobby-chat-message-continuation">
+          <div className="lobby-chat-message-content-continuation">
+            <div className="lobby-chat-message-user-timestamp-continuation">
+              {formatTimestamp(timestamp)}
+            </div>
+            <div className="lobby-chat-message-text-continuation">
+              <MessageFormatter message={message} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  })
+
+  const renderChatMessages = () => {
+    return messages.map((msg, index) => {
+
+      const isContinuation = index > 0 && messages[index-1].username === msg.username;
+
+      return isContinuation ? (
+        <UserContinuationMessage
+          key={index}
+          message={msg.message}
+          timestamp={msg.timestamp}
+        />
+      ) : (
+        <UserMessage
+          key={index}
+          username={msg.username}
+          profilePic={msg.profilePic}
+          message={msg.message}
+          timestamp={msg.timestamp}
+        />
+      );
+    })
+  };
+
   useLayoutEffect(() => {
     if (chatboxRef.current) {
       chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
@@ -209,49 +279,7 @@ const Lobby = () => {
 
           {/* TODO: Memoize the messages so they don't all re-render */}
           <div className="lobby-chat-area-messages" ref={chatboxRef}>
-            {messages.map((msg, index) => {
-
-              const isContinuation = index > 0 && messages[index-1].username === msg.username;
-
-              return isContinuation ? (
-                <div key={index} className="lobby-chat-message-container">
-                  <div className="lobby-chat-message-continuation">
-                    <div className="lobby-chat-message-content-continuation">
-                      <div className="lobby-chat-message-user-timestamp-continuation">
-                        {formatTimestamp(msg.timestamp)}
-                      </div>
-                      <div className="lobby-chat-message-text-continuation">
-                        <MessageFormatter message={msg.message} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div key={index} className="lobby-chat-message-container">
-                  <div className="lobby-chat-message">
-                    <div className="lobby-chat-message-avatar">
-                      <img
-                        className="user-profile-picture"
-                        src={msg.profilePic}
-                        width={35}
-                        height={35}
-                        alt={msg.username}
-                      />
-                    </div>
-
-                    <div className="lobby-chat-message-content">
-                      <div className="lobby-chat-message-user">
-                        <div className="lobby-chat-message-user-username">{msg.username}</div>
-                        <div className="lobby-chat-message-user-timestamp">{formatTimestamp(msg.timestamp)}</div>
-                      </div>
-                      <div className="lobby-chat-message-text">
-                        <MessageFormatter message={msg.message} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {renderChatMessages()}
           </div>
 
           <div className="lobby-chat-area-input">

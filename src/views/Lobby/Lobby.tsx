@@ -210,7 +210,7 @@ const Lobby = () => {
   };
 
   useLayoutEffect(() => {
-    if (chatboxRef.current) {
+    if (chatboxRef.current && chatboxRef.current.scrollHeight - chatboxRef.current.scrollTop - chatboxRef.current.offsetHeight < 600) {
       chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
     }
   }, [messages]);

@@ -199,7 +199,7 @@ const GameRoom = () => {
       const newToken = await refreshAccessToken();
       if (newToken && socketRef.current) {
         socketRef.current.disconnect();
-        socketRef.current = io(import.meta.env.VITE_API_URL + "/lobby", {
+        socketRef.current = io(import.meta.env.VITE_API_URL + "/gameRoom", {
           auth: {
             token: newToken,
           },

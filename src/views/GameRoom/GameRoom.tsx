@@ -12,6 +12,7 @@ import { formatTimestamp } from "../../helper/stringHelpers";
 import { refreshAccessToken } from "../../helper/refreshAccessToken";
 import { MessageFormatter } from "../../components/MessageFormatter";
 import GameRoomCountdownTimer from "../../components/GameRoom/GameRoomCountdownTimer";
+import ReactMarkdown from "react-markdown";
 
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
@@ -27,6 +28,7 @@ const GameRoom = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [message, setMessage] = useState<string>("");
   const [roundData, setRoundData] = useState<{ roomId: string, currentRoundStartTime: number, roundDuration: number } | null>(null);
+  const [currentProblem, setCurrentProblem] = useState<any>({});
 
   const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
@@ -179,18 +181,24 @@ const GameRoom = () => {
     });
 
     socket.on("nextRoundStarted", (data) => {
-      const systemJoinMessage = {
-        message: "The next round has started!",
-        username: "",
-        prefixEmoji: "🚀",
-        type: "system",
-        timestamp: new Date().toISOString(),
-      };
+      if (!data.initialJoin) {
+        const systemJoinMessage = {
+          message: "The next round has started!",
+          username: "",
+          prefixEmoji: "🚀",
+          type: "system",
+          timestamp: new Date().toISOString(),
+        };
+  
+        setMessages((prevMessages) => {
+          const updatedMessages = [...prevMessages, systemJoinMessage];
+          return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+        });
+      }
 
-      setMessages((prevMessages) => {
-        const updatedMessages = [...prevMessages, systemJoinMessage];
-        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
-      });
+      console.log(data.currentProblem);
+
+      setCurrentProblem(data.currentProblem);
       setRoundData(data);
     });
 
@@ -336,11 +344,52 @@ const GameRoom = () => {
       <Allotment>
         <Allotment.Pane preferredSize="25%">
           <div className="pane">
-            <h2>Sum</h2>
+            <h2>{currentProblem.name}</h2>
 
-            <div className="difficulty-badge easy">Easy</div>
+            <div className={`difficulty-badge ${currentProblem.difficulty || ''}`}>
+              {currentProblem.difficulty ? currentProblem.difficulty.charAt(0).toUpperCase() + currentProblem.difficulty.slice(1) : ''}
+            </div>
 
-            <p>Given an array of integers, find the sum of all of the numbers in the array.</p>
+            <ReactMarkdown>{currentProblem.description}</ReactMarkdown>
+
+            {currentProblem.sampleTestCases && currentProblem.sampleTestCases.length > 0 && (
+              <div>
+                {currentProblem.sampleTestCases.map((testCase: any, index: number) => (
+                  <div key={index} style={{ marginBottom: '20px' }}>
+                    <strong>Example {index + 1}</strong>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <strong>Input:</strong>
+                      <pre style={{ margin: 0, paddingLeft: "10px" }}>
+                        {Object.keys(testCase.input).map(key => (
+                            `${key} = ${Array.isArray(testCase.input[key]) ? `[${testCase.input[key].join(', ')}]` : testCase.input[key]}`
+                          )).join(', ')}
+                      </pre>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <strong>Output:</strong>
+                      <pre style={{ margin: 0, paddingLeft: "10px" }}>
+                        {
+                          Array.isArray(testCase.output) ? `[${testCase.output.join(', ')}]` 
+                          : typeof testCase.output === 'boolean' ? testCase.output.toString()
+                          : testCase.output
+                        }
+                      </pre>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <strong>Constraints</strong>
+              <ul>
+                {currentProblem.constraints && currentProblem.constraints.map((constraint: string, index: number) => (
+                  <li key={index}>
+                    <ReactMarkdown>{constraint}</ReactMarkdown>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </Allotment.Pane>
 

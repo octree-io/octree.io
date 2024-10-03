@@ -29,6 +29,14 @@
   background-color: #58b856;
 }
 
+.difficulty-badge.medium {
+  background-color: #ffb23f;
+}
+
+.difficulty-badge.hard {
+  background-color: #c90e0e;
+}
+
 .game-room-timer {
   width: 70px;
   border: 2px solid black;

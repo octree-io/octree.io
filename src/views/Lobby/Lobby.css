@@ -195,6 +195,8 @@
   margin-left: 10px;
   flex: 0 0 50px;
   text-align: center;
+  align-self: flex-start;
+  margin-top: 5px;
 }
 
 .lobby-userlist {

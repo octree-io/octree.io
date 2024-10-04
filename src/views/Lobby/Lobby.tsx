@@ -335,8 +335,10 @@ const Lobby = () => {
           <div className="lobby-create-room-modal-room-name">
             <label>Room name:</label>
             <input
+              type="text"
               name="roomName"
               onChange={(e) => setRoomName(e.target.value)}
+              maxLength={30}
             />
           </div>
           <button onClick={handleCreateRoom}>Create room</button>

@@ -86,6 +86,7 @@ const Signup = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="off"
+                maxLength={12}
                 required
               />
             </div>

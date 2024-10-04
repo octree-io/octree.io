@@ -5,7 +5,6 @@ import "allotment/dist/style.css";
 import Header from "../../components/Header/Header";
 import "./GameRoom.css";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { formatTimestamp } from "../../helper/stringHelpers";
@@ -13,6 +12,7 @@ import { refreshAccessToken } from "../../helper/refreshAccessToken";
 import { MessageFormatter } from "../../components/MessageFormatter";
 import GameRoomCountdownTimer from "../../components/GameRoom/GameRoomCountdownTimer";
 import ReactMarkdown from "react-markdown";
+import apiClient from "../../client/APIClient";
 
 interface StarterCode {
   [language: string]: string;
@@ -83,15 +83,15 @@ const GameRoom = () => {
       const code = editorRef.current.getValue();
 
       const payload = {
+        roomId,
         language,
         code,
       };
 
       try {
-        // TODO: Change the endpoint
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/execute`, payload);
-        console.log("Run Output:", response.data);
-        setConsoleOutput(response.data);
+        const response: any = await apiClient.post("/execute/run", payload);
+        console.log("Run Output:", response);
+        setConsoleOutput(response);
       } catch (error) {
         console.error("Error executing code:", error);
       } finally {
@@ -113,15 +113,14 @@ const GameRoom = () => {
       const code = editorRef.current.getValue();
 
       const payload = {
+        roomId,
         language,
         code,
       };
 
       try {
-        // TODO: Change the endpoint
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/execute`, payload);
-        console.log("Run Output:", response.data);
-        setConsoleOutput(response.data);
+        const response: any = await apiClient.post("/execute/submit", payload);
+        console.log("Run Output:", response);
       } catch (error) {
         console.error("Error executing code:", error);
       } finally {
@@ -225,6 +224,33 @@ const GameRoom = () => {
 
       setCurrentProblem(data.currentProblem);
       setRoundData(data);
+    });
+
+    socket.on("submitCodeResult", (data) => {
+      let systemMessage = {};
+
+      if (data.responseCode === 0) {
+        systemMessage = {
+          message: `finished in ${data.execTime}ms in ${data.language}!`,
+          username: data.user,
+          prefixEmoji: "✅",
+          type: "system",
+          timestamp: new Date().toISOString(),
+        };
+      } else {
+        systemMessage = {
+          message: "submitted a wrong answer.",
+          username: data.user,
+          prefixEmoji: "❌",
+          type: "system",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, systemMessage];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
     });
 
     socket.on("tokenExpired", async () => {

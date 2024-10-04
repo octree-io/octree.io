@@ -31,7 +31,7 @@ const Landing = () => {
 
             <div className="landing-hero-step">
               <h2>Select a language</h2>
-              <p>You can select up to 8 different languages. We support Python, C++, Java, C#, TypeScript, Ruby, Go, and Rust.</p>
+              <p>You can select up to 7 different languages. We support Python, C++, Java, C#, Ruby, Go, Rust and more coming in the future!</p>
             </div>
 
             <div className="landing-hero-step">

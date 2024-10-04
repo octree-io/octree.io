@@ -6,6 +6,7 @@ import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { jwtDecode } from "jwt-decode";
 import apiClient, { TokenExpiredError } from "../../client/APIClient";
 import { isTokenValid } from "../../helper/tokenValidation";
+import { FaGithub } from "react-icons/fa";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -103,6 +104,13 @@ const Header = () => {
       </div>
 
       {isLoggedIn ? (
+        <div className="header-right-section">
+          <div className="header-github-container">
+            <a href="https://github.com/octree-io" target="_blank" rel="noopener noreferrer" className="header-github-icon">
+              <FaGithub size={35} />
+            </a>
+          </div>
+
           <div className="header-profile-container">
             <img
               className="header-profile-icon header-clickable"
@@ -125,9 +133,18 @@ const Header = () => {
               </div>
             )}
           </div>
+        </div>
         ) : (
-          <div className="header-login-container">
-            <button className="header-login-button" onClick={() => navigate("/login")}>Login</button>
+          <div className="header-right-section">
+            <div className="header-github-container">
+              <a href="https://github.com/octree-io" target="_blank" rel="noopener noreferrer" className="header-github-icon">
+                <FaGithub size={35} />
+              </a>
+            </div>
+
+            <div className="header-login-container">
+              <button className="header-login-button" onClick={() => navigate("/login")}>Login</button>
+            </div>
           </div>
         )}
     </div>

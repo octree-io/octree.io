@@ -77,6 +77,7 @@
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  margin-top: 8px;
   margin-bottom: 7px;
   width: 70px;
 }
@@ -87,4 +88,24 @@
 
 .header-arrow-icon {
   cursor: pointer;
+}
+
+.header-right-section {
+  display: flex;
+  align-items: center;
+}
+
+.header-github-container {
+  display: flex;
+  margin-right: 10px;
+  margin-top: 5px;
+}
+
+.header-github-icon {
+  color: black;
+  transition: 0.3s all;
+}
+
+.header-github-icon:hover {
+  color: #b68cec;
 }

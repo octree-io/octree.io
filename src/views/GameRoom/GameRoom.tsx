@@ -14,6 +14,14 @@ import { MessageFormatter } from "../../components/MessageFormatter";
 import GameRoomCountdownTimer from "../../components/GameRoom/GameRoomCountdownTimer";
 import ReactMarkdown from "react-markdown";
 
+interface StarterCode {
+  [language: string]: string;
+}
+
+interface UserCode {
+  [language: string]: string;
+}
+
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
@@ -29,6 +37,9 @@ const GameRoom = () => {
   const [message, setMessage] = useState<string>("");
   const [roundData, setRoundData] = useState<{ roomId: string, currentRoundStartTime: number, roundDuration: number } | null>(null);
   const [currentProblem, setCurrentProblem] = useState<any>({});
+  const [starterCode, setStarterCode] = useState<StarterCode>({});
+  const [userCode, setUserCode] = useState<UserCode>({});
+  const [currentCode, setCurrentCode] = useState<string>("");
 
   const navigate = useNavigate();
   const socketRef = useRef<Socket | null>(null);
@@ -45,8 +56,19 @@ const GameRoom = () => {
     monaco.languages.setLanguageConfiguration("ocaml", ocamlLanguageConfiguration);
   }
 
+  const handleEditorCodeChange = (value: string | undefined) => {
+    setUserCode((prevUserCode) => ({
+      ...prevUserCode,
+      [language]: value || "",
+    }));
+  };
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLanguage(e.target.value);
+    const selectedLanguage = e.target.value;
+
+    setCurrentCode(userCode[selectedLanguage] || starterCode[selectedLanguage]);
+
+    setLanguage(selectedLanguage);
   }
 
   const handleRunClick = async () => {
@@ -196,7 +218,10 @@ const GameRoom = () => {
         });
       }
 
-      console.log(data.currentProblem);
+      const starterCode = data.currentProblem.starterCode;
+      setStarterCode(starterCode);
+      setUserCode(starterCode);
+      setCurrentCode(starterCode[language]);
 
       setCurrentProblem(data.currentProblem);
       setRoundData(data);
@@ -413,6 +438,8 @@ const GameRoom = () => {
                 <Editor
                   language={language}
                   height={"88%"}
+                  value={currentCode}
+                  onChange={handleEditorCodeChange}
                   options={{
                     minimap: { enabled: false },
                     hideCursorInOverviewRuler: true,

@@ -11,7 +11,6 @@ import { formatTimestamp } from "../../helper/stringHelpers";
 import { refreshAccessToken } from "../../helper/refreshAccessToken";
 import { MessageFormatter } from "../../components/MessageFormatter";
 import GameRoomCountdownTimer from "../../components/GameRoom/GameRoomCountdownTimer";
-import ReactMarkdown from "react-markdown";
 import apiClient from "../../client/APIClient";
 
 interface StarterCode {
@@ -220,6 +219,7 @@ const GameRoom = () => {
       const starterCode = data.currentProblem.starterCode;
       setStarterCode(starterCode);
       setUserCode(starterCode);
+      setLanguage("python");
       setCurrentCode(starterCode[language]);
 
       setCurrentProblem(data.currentProblem);
@@ -401,46 +401,9 @@ const GameRoom = () => {
               {currentProblem.difficulty ? currentProblem.difficulty.charAt(0).toUpperCase() + currentProblem.difficulty.slice(1) : ''}
             </div>
 
-            <ReactMarkdown>{currentProblem.description}</ReactMarkdown>
-
-            {currentProblem.sampleTestCases && currentProblem.sampleTestCases.length > 0 && (
-              <div>
-                {currentProblem.sampleTestCases.map((testCase: any, index: number) => (
-                  <div key={index} style={{ marginBottom: '20px' }}>
-                    <strong>Example {index + 1}</strong>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <strong>Input:</strong>
-                      <pre style={{ margin: 0, paddingLeft: "10px" }}>
-                        {Object.keys(testCase.input).map(key => (
-                            `${key} = ${Array.isArray(testCase.input[key]) ? `[${testCase.input[key].join(', ')}]` : testCase.input[key]}`
-                          )).join(', ')}
-                      </pre>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <strong>Output:</strong>
-                      <pre style={{ margin: 0, paddingLeft: "10px" }}>
-                        {
-                          Array.isArray(testCase.output) ? `[${testCase.output.join(', ')}]` 
-                          : typeof testCase.output === 'boolean' ? testCase.output.toString()
-                          : testCase.output
-                        }
-                      </pre>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div>
-              <strong>Constraints</strong>
-              <ul>
-                {currentProblem.constraints && currentProblem.constraints.map((constraint: string, index: number) => (
-                  <li key={index}>
-                    <ReactMarkdown>{constraint}</ReactMarkdown>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <div
+              dangerouslySetInnerHTML={{ __html: currentProblem.description }}
+            />
           </div>
         </Allotment.Pane>
 

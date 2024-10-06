@@ -13,6 +13,8 @@ import { MessageFormatter } from "../../components/MessageFormatter";
 import GameRoomCountdownTimer from "../../components/GameRoom/GameRoomCountdownTimer";
 import apiClient from "../../client/APIClient";
 
+// TODO: This whole file needs to be refactored
+
 interface StarterCode {
   [language: string]: string;
 }

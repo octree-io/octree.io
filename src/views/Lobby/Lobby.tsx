@@ -82,6 +82,20 @@ const Lobby = () => {
       });
     });
 
+    socket.on("chatHistory", (data) => {
+      const transformedMessages = data.map((messageData: any) => ({
+        username: messageData.username,
+        profilePic: messageData.profilePic,
+        message: messageData.message,
+        timestamp: messageData.timestamp
+      }));
+
+      setMessages(() => {
+        const updatedMessages = [...transformedMessages];
+        return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
+      });
+    });
+
     socket.on("chatMessage", (data) => {
       setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages, data];

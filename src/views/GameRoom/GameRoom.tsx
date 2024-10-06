@@ -23,16 +23,19 @@ interface UserCode {
   [language: string]: string;
 }
 
+const initialConsoleOutputState = {
+  stdout: [],
+  stderr: [],
+  execTime: "",
+  timedOut: false,
+  submissionId: null,
+};
+
 const GameRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [language, setLanguage] = useState("python");
-  const [consoleOutput, setConsoleOutput] = useState({
-    stdout: [],
-    stderr: [],
-    execTime: "",
-    timedOut: false
-  });
+  const [consoleOutput, setConsoleOutput] = useState(initialConsoleOutputState);
   const [users, setUsers] = useState<{ [username: string]: string }>({});
   const [messages, setMessages] = useState<any[]>([]);
   const [message, setMessage] = useState<string>("");
@@ -80,6 +83,7 @@ const GameRoom = () => {
     if (editorRef.current) {
       setIsRunLoading(true);
       setIsSubmitLoading(true);
+      setConsoleOutput(initialConsoleOutputState);
 
       const code = editorRef.current.getValue();
 
@@ -470,6 +474,12 @@ const GameRoom = () => {
             </Allotment.Pane>
             <Allotment.Pane preferredSize="15%">
               <div className="pane">
+                {consoleOutput.submissionId && (
+                  <div>
+                    <div>Run ID: <code>{consoleOutput.submissionId}</code></div>
+                  </div>
+                )}
+
                 <div>
                   <div>stdout</div>
                   <div className="game-room-console-output">

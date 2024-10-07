@@ -128,6 +128,19 @@ class APIClient {
     }
   }
 
+  public async delete<T>(url: string): Promise<T> {
+    try {
+      const response = await this.api.delete<T>(url);
+      return response.data;
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        console.log('Tokens expired, redirecting to login');
+        throw error;
+      }
+      throw error;
+    }
+  }
+
   public login(accessToken: string) {
     localStorage.setItem('token', accessToken);
   }

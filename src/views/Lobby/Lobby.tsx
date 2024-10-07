@@ -346,6 +346,7 @@ const Lobby = () => {
         <div className="lobby-create-room-modal">
           <h1>Create a room</h1>
           <hr />
+          <div>Looking for Trivia Rooms? <a href="/trivia" target="_blank" rel="noopener noreferrer">Click here</a></div>
           <div className="lobby-create-room-modal-room-name">
             <label>Room name:</label>
             <input

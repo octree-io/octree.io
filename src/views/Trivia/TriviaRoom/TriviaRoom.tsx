@@ -92,7 +92,7 @@ const TriviaRoom = () => {
                   </div>
                 </>
               ) : (
-                <div>
+                <div style={{ maxWidth: "500px" }}>
                   {questions.map((question: any, index: number) => (
                     <div key={question.questionId}>
                       <h3>{index + 1}. {question.questionText}</h3>

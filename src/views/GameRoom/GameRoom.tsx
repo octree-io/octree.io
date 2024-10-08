@@ -427,6 +427,7 @@ const GameRoom = () => {
                     <option value="ruby">Ruby</option>
                     <option value="go">Go</option>
                     <option value="rust">Rust</option>
+                    <option value="ocaml">OCaml</option>
                   </select>
                   </div>
                 </div>

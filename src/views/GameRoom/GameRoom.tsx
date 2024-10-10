@@ -408,6 +408,7 @@ const GameRoom = () => {
             </div>
 
             <div
+              className="game-room-problem-section"
               dangerouslySetInnerHTML={{ __html: currentProblem.description }}
             />
           </div>

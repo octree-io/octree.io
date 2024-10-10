@@ -242,3 +242,7 @@
   padding-left: 52px;
   padding-bottom: 5px;
 }
+
+.game-room-problem-section pre {
+  white-space: pre-wrap;
+}

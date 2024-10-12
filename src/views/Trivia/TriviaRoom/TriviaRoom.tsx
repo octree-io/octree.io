@@ -79,7 +79,7 @@ const TriviaRoom = () => {
 
             <div style={{ display: "flex", flexDirection: "column" }}>
               {isLoading ? (
-                <div>
+                <div style={{ margin: "auto" }}>
                   <h2>Grading answers... This may take a minute</h2>
                   <h3>Do not navigate away from the page</h3>
                   <div className="trivia-room-spinner"></div>

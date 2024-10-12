@@ -91,11 +91,25 @@ const TriviaRoom = () => {
                   <ReactMarkdown>{answers}</ReactMarkdown>
                 </>
               ) : (
-                <div style={{ maxWidth: "500px" }}>
+                <div style={{ width: "640px", maxWidth: "80vw", margin: "auto" }}>
                   {questions.map((question: any, index: number) => (
-                    <div key={question.questionId}>
+                    <div
+                      key={question.questionId}
+                      style={{
+                        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                        padding: "20px",
+                        borderRadius: "10px",
+
+                      }}
+                    >
                       <h3>{index + 1}. {question.questionText}</h3>
                       <textarea
+                        style={{
+                          resize: "none",
+                          width: "100%",
+                          fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif',
+                          scrollbarWidth: "thin",
+                        }}
                         placeholder="Enter your response"
                         rows={10}
                         cols={45}
@@ -105,8 +119,8 @@ const TriviaRoom = () => {
                     </div>
                   ))}
 
-                  <div>
-                    <button onClick={submitAnswers}>Submit answers</button>
+                  <div style={{ marginTop: "10px" }}>
+                    <button className="purple-button" onClick={submitAnswers}>Submit answers</button>
                   </div>
                 </div>
               )}

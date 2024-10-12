@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import apiClient from "../../../client/APIClient";
 import { useNavigate, useParams } from "react-router-dom";
 import TriviaRoomCountdownTimer from "../../../components/TriviaRoom/TriviaRoomCountdownTimer";
+import ReactMarkdown from "react-markdown";
 
 const TriviaRoom = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +77,7 @@ const TriviaRoom = () => {
               />
             )}
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               {isLoading ? (
                 <div>
                   <h2>Grading answers... This may take a minute</h2>
@@ -87,9 +88,7 @@ const TriviaRoom = () => {
                 <>
                   <h2>Graded answers</h2>
 
-                  <div style={{ whiteSpace: "pre-wrap" }}>
-                    {answers}
-                  </div>
+                  <ReactMarkdown>{answers}</ReactMarkdown>
                 </>
               ) : (
                 <div style={{ maxWidth: "500px" }}>

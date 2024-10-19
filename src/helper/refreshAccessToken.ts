@@ -1,7 +1,7 @@
 import apiClient, { TokenExpiredError } from "../client/APIClient";
 
 export const refreshAccessToken = async (): Promise<string | false> => {
-  let retries = 5;
+  let retries = 3;
   let delay = 1000;
 
   for (let attempt = 1; attempt <= retries; attempt++) {

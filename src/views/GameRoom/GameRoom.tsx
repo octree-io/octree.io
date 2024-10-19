@@ -91,17 +91,14 @@ const GameRoom = () => {
         roomId,
         language,
         code,
+        socketId: socketRef.current?.id,
       };
 
       try {
         const response: any = await apiClient.post("/execute/run", payload);
         console.log("Run Output:", response);
-        setConsoleOutput(response);
       } catch (error) {
         console.error("Error executing code:", error);
-      } finally {
-        setIsRunLoading(false);
-        setIsSubmitLoading(false);
       }
     }
   };
@@ -121,6 +118,7 @@ const GameRoom = () => {
         roomId,
         language,
         code,
+        socketId: socketRef.current?.id,
       };
 
       try {
@@ -128,9 +126,6 @@ const GameRoom = () => {
         console.log("Run Output:", response);
       } catch (error) {
         console.error("Error executing code:", error);
-      } finally {
-        setIsRunLoading(false);
-        setIsSubmitLoading(false);
       }
     }
   };
@@ -257,6 +252,18 @@ const GameRoom = () => {
         const updatedMessages = [...prevMessages, systemMessage];
         return updatedMessages.length > 100 ? updatedMessages.slice(-100) : updatedMessages;
       });
+    });
+
+    socket.on("compilationResponse", (data) => {
+      setConsoleOutput({
+        stdout: data.stdout.split("\n"),
+        stderr: data.stderr.split("\n"),
+        execTime: data.execTime,
+        timedOut: false,
+        submissionId: data.submissionId,
+      });
+      setIsRunLoading(false);
+      setIsSubmitLoading(false);
     });
 
     socket.on("tokenExpired", async () => {
@@ -426,9 +433,8 @@ const GameRoom = () => {
                     <option value="cpp">C++</option>
                     <option value="csharp">C#</option>
                     <option value="ruby">Ruby</option>
-                    <option value="go">Go</option>
-                    <option value="rust">Rust</option>
-                    <option value="ocaml">OCaml</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
                   </select>
                   </div>
                 </div>
@@ -486,7 +492,7 @@ const GameRoom = () => {
                   <div>stdout</div>
                   <div className="game-room-console-output">
                     {consoleOutput.stdout.map((output: any, index) => (
-                      <div key={index}>{output.text}</div>
+                      <div key={index}>{output}</div>
                     ))}
                   </div>
                 </div>
@@ -495,7 +501,7 @@ const GameRoom = () => {
                   <div>stderr</div>
                   <div className="game-room-console-output">
                     {consoleOutput.stderr.map((output: any, index) => (
-                      <div key={index}>{output.text}</div>
+                      <div key={index}>{output}</div>
                     ))}
                   </div>
                 </div>

@@ -18,8 +18,8 @@
 
 Components:
 - Website: This package contains all of the React frontend code used to run the website.
-- Backend API: octree.io-backend is the backend that uses Express and socket.io to handle requests.
-- Worker: octree.io-worker is the worker service that compiles and executes the code submissions.
+- Backend API: [octree.io-backend](https://github.com/octree-io/octree.io-backend) is the backend that uses Express and socket.io to handle requests.
+- Worker: [octree.io-worker](https://github.com/octree-io/octree.io-worker) is the worker service that compiles and executes the code submissions.
 - Postgres: Main database used for storing user info, room data, chat messages, etc. The database schema can be found at tables.sql
 - MongoDB: Used to store the problem documents which contain metadata like problem name, ID, starter code, test cases and so on
 - RabbitMQ: The messaging queue that's used to relay messages between the backend and the workers.
@@ -29,7 +29,7 @@ How it works:
 - Frontend sends the code to socket.io room.
 - Backend receives the code request and enqueues a message to RabbitMQ.
 - Worker picks up message from RabbitMQ and starts processing work.
-- Most languages use the Compiler Explorer API to compile and execute code except for JavaScript and TypeScript. A dummy npm package is created for both JS & TS and the worker writes the code to the package and executes it with wasmtime.
+- Most languages use the [Compiler Explorer API](https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md) to compile and execute code except for JavaScript and TypeScript. A dummy npm package is created for both JS & TS and the worker writes the code to the package and executes it with wasmtime.
   - TypeScript transpiles to JavaScript with `tsc` first before being executed.
 - Once the worker completes the execution, the stdout, stderr and execution time are sent to a compilation responses queue in RabbitMQ.
 - Backend picks up message from RabbitMQ and relays the results back to the user who requested the code compilation.

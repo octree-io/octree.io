@@ -6,13 +6,13 @@
 ![Landing](https://github.com/user-attachments/assets/53dc2955-7611-410f-a71e-26b3d24d803a)
 
 
-### Features
+## Features
 - Account creation with the ability to change your profile picture and username
 - Lobby which is a Slack-like chat room
 - Game rooms which consist of Leetcode-style problems that have a timer and are cycled and also contain a chatbox
 - Trivia rooms which are a way to quiz yourself for whichever types of questions you choose and get graded at the end by GenAI. Was originally built for studying interview trivia problems such as OS concepts, databases, concurrency, etc.
 
-### High Level Overview
+## High Level Overview
 
 ![octree io design](https://github.com/user-attachments/assets/0d00f1c1-f2ff-49eb-9c09-e774a0caeefb)
 
@@ -34,6 +34,6 @@ How it works:
 - Once the worker completes the execution, the stdout, stderr and execution time are sent to a compilation responses queue in RabbitMQ.
 - Backend picks up message from RabbitMQ and relays the results back to the user who requested the code compilation.
 
-### Bug Reports
+## Bug Reports
 
 Feel free to open up an issue if you see any bugs in the platform. Contributions are also always more than welcome. :)

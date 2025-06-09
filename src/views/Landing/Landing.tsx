@@ -22,7 +22,7 @@ const Landing = () => {
 
       <section className="landing-hero">
         <div>
-          <h1 className="landing-hero-header">Solve Problems Together</h1>
+          <h1 className="landing-hero-header">Code Together, Grow Together</h1>
           <div className="landing-hero-steps">
             <div className="landing-hero-step">
               <h2>Join a room</h2>

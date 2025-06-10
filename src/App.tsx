@@ -10,6 +10,7 @@ import Settings from './views/Settings/Settings';
 import RoomNotFound from './views/RoomNotFound/RoomNotFound';
 import CreateTriviaRoom from './views/Trivia/CreateTriviaRoom/CreateTriviaRoom';
 import TriviaRoom from './views/Trivia/TriviaRoom/TriviaRoom';
+import PracticeRoom from './views/PracticeRoom/PracticeRoom';
 
 const App = () => {
   return (
@@ -23,6 +24,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/practice-room" element={<PracticeRoom />} />
         <Route path="/room-not-found" element={<RoomNotFound />} />
       </Routes>
     </Router>

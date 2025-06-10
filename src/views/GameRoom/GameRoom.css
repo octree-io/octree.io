@@ -246,3 +246,7 @@
 .game-room-problem-section pre {
   white-space: pre-wrap;
 }
+
+.prose pre {
+  white-space: pre-wrap;
+}

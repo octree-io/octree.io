@@ -306,39 +306,39 @@ const PracticeRoom = () => {
                     onMount={(editor) => (editorRef.current = editor)}
                   />
                 </div>
-
-                <div className={`flex justify-end p-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'} border-t`}>
-                  <div className="flex">
-                    <button
-                      className={`flex items-center justify-center px-4 py-2 rounded mr-2 bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
-                        isRunLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
-                      }`}
-                      onClick={isRunLoading ? undefined : handleRunClick}
-                      disabled={isRunLoading}
-                    >
-                      {isRunLoading ? (
-                        <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mr-2"></div>
-                      ) : null}
-                      Run
-                    </button>
-                    <button
-                      className={`flex items-center justify-center px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
-                        isHintLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
-                      }`}
-                      onClick={isHintLoading ? undefined : handleHintClick}
-                      disabled={isHintLoading}
-                    >
-                      {isHintLoading ? (
-                        <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mr-2"></div>
-                      ) : null}
-                      Hint
-                    </button>
-                  </div>
-                </div>
               </div>
             </Allotment.Pane>
 
             <Allotment.Pane preferredSize="15%">
+              <div className={`flex justify-end p-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'} border-t`}>
+                <div className="flex">
+                  <button
+                    className={`flex items-center justify-center px-4 py-2 rounded mr-2 bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
+                      isRunLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                    onClick={isRunLoading ? undefined : handleRunClick}
+                    disabled={isRunLoading}
+                  >
+                    {isRunLoading ? (
+                      <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mr-2"></div>
+                    ) : null}
+                    Run
+                  </button>
+                  <button
+                    className={`flex items-center justify-center px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
+                      isHintLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                    onClick={isHintLoading ? undefined : handleHintClick}
+                    disabled={isHintLoading}
+                  >
+                    {isHintLoading ? (
+                      <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mr-2"></div>
+                    ) : null}
+                    Hint
+                  </button>
+                </div>
+              </div>
+
               <div className={`p-4 h-full overflow-auto ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
                 {consoleOutput.submissionId && (
                   <div className="mb-2">

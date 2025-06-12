@@ -38,7 +38,11 @@ const PracticeRoom = () => {
   const [currentCode, setCurrentCode] = useState<string>("");
   const [leetcodeUrl, setLeetcodeUrl] = useState("");
   const [problem, setProblem] = useState<Problem>({ title: "", difficulty: "", problemHtml: "" });
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+
+  const [timerDuration, setTimerDuration] = useState(300); // Default 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(timerDuration);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   const navigate = useNavigate();
   const editorRef = useRef<any>(null);
@@ -52,6 +56,12 @@ const PracticeRoom = () => {
     monaco.languages.setMonarchTokensProvider("ocaml", ocamlTokensProvider);
     monaco.languages.setLanguageConfiguration("ocaml", ocamlLanguageConfiguration);
   }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };  
 
   const handleEditorCodeChange = (value: string | undefined) => {
     setUserCode((prevUserCode) => ({
@@ -202,6 +212,29 @@ const PracticeRoom = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (!isTimerRunning) return;
+  
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsTimerRunning(false);
+          setMessages(prev => [...prev, {
+            prefixEmoji: "⏰",
+            username: "System",
+            message: "Time's up!",
+            timestamp: new Date().toISOString(),
+          }]);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);  
+
   const getDifficultyColor = () => {
     const base = darkMode ? 'text-white' : 'text-black';
     switch (problem.difficulty?.toLowerCase()) {
@@ -310,7 +343,33 @@ const PracticeRoom = () => {
             </Allotment.Pane>
 
             <Allotment.Pane preferredSize="15%">
-              <div className={`flex justify-end p-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'} border-t`}>
+              <div className={`flex justify-between items-center p-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'} border-t`}>
+                {/* Left: Timer */}
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={Math.floor(timerDuration / 60)}
+                    onChange={(e) => {
+                      const minutes = Math.max(1, Math.min(60, parseInt(e.target.value)));
+                      setTimerDuration(minutes * 60);
+                      setTimeLeft(minutes * 60);
+                    }}
+                    className={`w-16 mr-2 px-2 py-1 rounded border text-center ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-black border-gray-300'}`}
+                  />
+                  <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    {formatTime(timeLeft)}
+                  </span>
+                  <button
+                    className={`ml-2 px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white focus:outline-none cursor-pointer`}
+                    onClick={() => setIsTimerRunning(prev => !prev)}
+                  >
+                    {isTimerRunning ? "Pause" : "Start"}
+                  </button>
+                </div>
+
+                {/* Right: Run & Hint buttons */}
                 <div className="flex">
                   <button
                     className={`flex items-center justify-center px-4 py-2 rounded mr-2 bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
@@ -319,9 +378,9 @@ const PracticeRoom = () => {
                     onClick={isRunLoading ? undefined : handleRunClick}
                     disabled={isRunLoading}
                   >
-                    {isRunLoading ? (
+                    {isRunLoading && (
                       <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mr-2"></div>
-                    ) : null}
+                    )}
                     Run
                   </button>
                   <button
@@ -331,9 +390,9 @@ const PracticeRoom = () => {
                     onClick={isHintLoading ? undefined : handleHintClick}
                     disabled={isHintLoading}
                   >
-                    {isHintLoading ? (
+                    {isHintLoading && (
                       <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mr-2"></div>
-                    ) : null}
+                    )}
                     Hint
                   </button>
                 </div>

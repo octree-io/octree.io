@@ -92,7 +92,7 @@ const Landing = () => {
           <div className="landing-footer-column">
             <div className="landing-footer-logo">
               <img className="landing-footer-logo-image" src={Logo} width={32} alt="Logo" />
-              <h3 className="landing-footer-logo-text">octree.io<sup>BETA</sup></h3>
+              <h3 className="font-bold ml-1">octree<span className="text-[#9266cc]">.io</span><sup>BETA</sup></h3>
             </div>
             <div className="landing-footer-copyright">© 2024 octree.io. All rights reserved.</div>
           </div>

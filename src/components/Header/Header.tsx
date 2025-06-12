@@ -98,8 +98,8 @@ const Header = () => {
     <div className="header">
       <div className="header-content">
         <img className="header-clickable" onClick={handleLogoClick} src={Logo} width={32} alt="Logo" />
-        <h3 className="header-logo header-clickable" onClick={handleLogoClick}>
-          octree.io<sup className="header-beta">BETA</sup>
+        <h3 className="font-bold ml-1 cursor-pointer" onClick={handleLogoClick}>
+          octree<span className="text-[#9266cc]">.io</span><sup className="header-beta">BETA</sup>
         </h3>
       </div>
 

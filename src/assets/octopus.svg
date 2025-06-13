@@ -1,1 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#553788" d="M10 12c3 5 0 10.692-3 9.692s-4 2-1 3 9.465-.465 13-4c1-1 2-1 2-1L10 12z"/><path fill="#553788" d="M26 12c-3 5 0 10.692 3 9.692s4 2 1 3-9.465-.465-13-4c-1-1-2-1-2-1L26 12z"/><path fill="#744EAA" d="M30.188 16c-3 5 0 10.692 3 9.692s4 2 1 3-9.465-.465-13-4c-1-1-2-1-2-1l11-7.692zM5.812 16c3 5 0 10.692-3 9.692s-4 2-1 3 9.465-.465 13-4c1-1 2-1 2-1L5.812 16z"/><path fill="#9266CC" d="M33.188 31.375c-2.729.91-6.425-5.626-4.812-10.578C30.022 17.554 31 13.94 31 11c0-7.18-5.82-11-13-11S5 3.82 5 11c0 2.94.978 6.554 2.624 9.797 1.613 4.952-2.083 11.488-4.812 10.578-3-1-4 3-1 4s8.31-.627 12-4c2.189-2 4.189-2 4.189-2s2 0 4.188 2c3.69 3.373 9 5 12 4s1.999-5-1.001-4z"/><circle fill="#292F33" cx="14" cy="21" r="2"/><circle fill="#292F33" cx="22" cy="21" r="2"/><script xmlns=""/></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+  <!-- Octopus body -->
+  <ellipse cx="50" cy="40" rx="30" ry="25" fill="#9266cc" />
+
+  <!-- Eyes -->
+  <circle cx="40" cy="35" r="6" fill="white" />
+  <circle cx="60" cy="35" r="6" fill="white" />
+  <circle cx="41" cy="34" r="3" fill="black" />
+  <circle cx="61" cy="34" r="3" fill="black" />
+
+  <!-- Eye highlights -->
+  <circle cx="42" cy="32" r="1" fill="white" />
+  <circle cx="62" cy="32" r="1" fill="white" />
+
+  <!-- Mouth -->
+  <ellipse cx="50" cy="45" rx="8" ry="4" fill="#7c3aed" />
+  <ellipse cx="50" cy="43" rx="6" ry="2" fill="#9266cc" />
+
+  <!-- Tentacles -->
+  <path d="M 25 55 Q 15 65 20 75 Q 25 80 15 85" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 35 58 Q 25 68 30 78 Q 35 83 25 88" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 45 60 Q 35 70 40 80 Q 45 85 35 90" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 50 60 Q 45 70 50 80 Q 55 85 45 90" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 55 60 Q 65 70 60 80 Q 55 85 65 90" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 65 58 Q 75 68 70 78 Q 65 83 75 88" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 75 55 Q 85 65 80 75 Q 75 80 85 85" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+  <path d="M 50 62 Q 60 72 55 82 Q 50 87 60 92" stroke="#9266cc" stroke-width="6" fill="none" stroke-linecap="round" />
+
+  <!-- Suction cups -->
+  <circle cx="18" cy="72" r="2.5" fill="#7c3aed" />
+  <circle cx="28" cy="75" r="2.5" fill="#7c3aed" />
+  <circle cx="38" cy="77" r="2.5" fill="#7c3aed" />
+  <circle cx="48" cy="77" r="2.5" fill="#7c3aed" />
+  <circle cx="58" cy="77" r="2.5" fill="#7c3aed" />
+  <circle cx="68" cy="75" r="2.5" fill="#7c3aed" />
+  <circle cx="78" cy="72" r="2.5" fill="#7c3aed" />
+  <circle cx="58" cy="79" r="2.5" fill="#7c3aed" />
+</svg>

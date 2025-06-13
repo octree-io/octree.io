@@ -4,7 +4,7 @@ import { ocamlLanguageConfiguration, ocamlTokensProvider } from "../../config/oc
 import "allotment/dist/style.css";
 import Header from "../../components/Header/Header";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { formatTimestamp } from "../../helper/stringHelpers";
 import apiClient from "../../client/APIClient";
 import { FaMoon, FaSun } from "react-icons/fa";
@@ -44,7 +44,7 @@ const PracticeRoom = () => {
   const [timeLeft, setTimeLeft] = useState(timerDuration);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const editorRef = useRef<any>(null);
   const chatboxRef = useRef<HTMLDivElement>(null);
 

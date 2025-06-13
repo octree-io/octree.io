@@ -205,12 +205,12 @@ const PracticeRoom = () => {
     }]);
   }, []);
 
-  useEffect(() => {
-    if (!localStorage.getItem("token")) {
-      console.log("[Practice Room] Invalid token");
-      navigate("/login");
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   if (!localStorage.getItem("token")) {
+  //     console.log("[Practice Room] Invalid token");
+  //     navigate("/login");
+  //   }
+  // }, [navigate]);
 
   useEffect(() => {
     if (!isTimerRunning) return;

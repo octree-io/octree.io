@@ -8,6 +8,7 @@ import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { formatTimestamp } from "../../helper/stringHelpers";
 import apiClient from "../../client/APIClient";
 import { FaMoon, FaSun } from "react-icons/fa";
+import ReactMarkdown from "react-markdown";
 
 interface UserCode {
   [language: string]: string;
@@ -171,7 +172,7 @@ const PracticeRoom = () => {
     <div className={`flex justify-between items-start p-2 mb-2 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
       <div className="flex flex-col">
         <div className={darkMode ? "text-gray-200" : "text-gray-800"}>
-          {prefixEmoji} <span className="font-bold">{username}</span> {message}
+          {prefixEmoji} <span className="font-bold">{username}</span> <ReactMarkdown>{message}</ReactMarkdown>
         </div>
       </div>
       <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} whitespace-nowrap`}>{formatTimestamp(timestamp)}</div>

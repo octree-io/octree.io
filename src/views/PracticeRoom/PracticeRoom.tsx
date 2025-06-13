@@ -277,7 +277,7 @@ const PracticeRoom = () => {
                 onChange={(e) => setLeetcodeUrl(e.target.value)}
               />
               <button
-                className={`px-4 py-2 rounded-r bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
+                className={`px-4 py-2 rounded-r bg-[#9266cc] hover:bg-[#b68cec] transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
                   isFetchLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
                 }`}
                 onClick={handleFetchLeetcodeProblemClick}
@@ -362,7 +362,7 @@ const PracticeRoom = () => {
                     {formatTime(timeLeft)}
                   </span>
                   <button
-                    className={`ml-2 px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white focus:outline-none cursor-pointer`}
+                    className={`ml-2 px-3 py-1 rounded bg-[#9266cc] hover:bg-[#b68cec] transition-colors duration-300 ease-in-out text-white focus:outline-none cursor-pointer`}
                     onClick={() => setIsTimerRunning(prev => !prev)}
                   >
                     {isTimerRunning ? "Pause" : "Start"}
@@ -372,7 +372,7 @@ const PracticeRoom = () => {
                 {/* Right: Run & Hint buttons */}
                 <div className="flex">
                   <button
-                    className={`flex items-center justify-center px-4 py-2 rounded mr-2 bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
+                    className={`flex items-center justify-center px-4 py-2 rounded mr-2 bg-[#9266cc] hover:bg-[#b68cec] transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
                       isRunLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
                     }`}
                     onClick={isRunLoading ? undefined : handleRunClick}
@@ -384,7 +384,7 @@ const PracticeRoom = () => {
                     Run
                   </button>
                   <button
-                    className={`flex items-center justify-center px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
+                    className={`flex items-center justify-center px-4 py-2 rounded bg-[#9266cc] hover:bg-[#b68cec] transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
                       isHintLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
                     }`}
                     onClick={isHintLoading ? undefined : handleHintClick}

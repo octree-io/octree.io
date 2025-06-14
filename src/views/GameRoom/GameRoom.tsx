@@ -408,7 +408,7 @@ const GameRoom = () => {
       <Allotment>
         <Allotment.Pane preferredSize="25%">
           <div className="pane">
-            <h2>{currentProblem.name}</h2>
+            <h2 className="text-2xl font-bold mb-4">{currentProblem.name}</h2>
 
             <div className={`difficulty-badge ${currentProblem.difficulty || ''}`}>
               {currentProblem.difficulty ? currentProblem.difficulty.charAt(0).toUpperCase() + currentProblem.difficulty.slice(1) : ''}

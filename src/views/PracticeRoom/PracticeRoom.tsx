@@ -9,6 +9,7 @@ import { formatTimestamp } from "../../helper/stringHelpers";
 import apiClient from "../../client/APIClient";
 import { FaMoon, FaSun } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
+import ProblemListTab from "../../components/PracticeRoom/ProblemListTab";
 
 interface UserCode {
   [language: string]: string;
@@ -28,6 +29,13 @@ const initialConsoleOutputState = {
   submissionId: null,
 };
 
+const leftTabs = [
+  { key: "problem", label: "Problem" },
+  { key: "list", label: "Problem List" },
+] as const;
+
+type LeftTabKey = typeof leftTabs[number]["key"];
+
 const PracticeRoom = () => {
   const [isRunLoading, setIsRunLoading] = useState(false);
   const [isFetchLoading, setIsFetchLoading] = useState(false);
@@ -40,6 +48,7 @@ const PracticeRoom = () => {
   const [leetcodeUrl, setLeetcodeUrl] = useState("");
   const [problem, setProblem] = useState<Problem>({ title: "", difficulty: "", problemHtml: "" });
   const [darkMode, setDarkMode] = useState(false);
+  const [activeLeftTab, setActiveLeftTab] = useState<LeftTabKey>("problem");
 
   const [timerDuration, setTimerDuration] = useState(300); // Default 5 minutes in seconds
   const [timeLeft, setTimeLeft] = useState(timerDuration);
@@ -109,14 +118,14 @@ const PracticeRoom = () => {
     }
   };
 
-  const handleFetchLeetcodeProblemClick = async () => {
+  const handleFetchLeetcodeProblemClick = async (url?: string) => {
     if (isFetchLoading) return;
 
     setIsFetchLoading(true);
 
     try {
       const response: any = await apiClient.post("/practice-room/leetcode", {
-        leetcodeUrl,
+        leetcodeUrl: url || leetcodeUrl,
       });
       const question = response?.problem?.data?.question;
       setProblem({
@@ -246,12 +255,73 @@ const PracticeRoom = () => {
     }
   };
 
+  const renderLeftPane = () => {
+    switch (activeLeftTab) {
+      case "problem":
+        return (
+          <div className={`p-4 h-full overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+            <div className="flex items-center mb-4">
+              <input
+                type="text"
+                className={`flex-grow px-4 py-2 rounded-l ${darkMode ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-purple-600`}
+                placeholder="Enter Leetcode URL"
+                onChange={(e) => setLeetcodeUrl(e.target.value)}
+              />
+              <button
+                className={`px-4 py-2 rounded-r bg-[#9266cc] hover:bg-[#b68cec] transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
+                  isFetchLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
+                }`}
+                onClick={() => handleFetchLeetcodeProblemClick()}
+                disabled={isFetchLoading}
+              >
+                {isFetchLoading ? (
+                  <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mx-auto"></div>
+                ) : "Fetch"}
+              </button>
+            </div>
+
+            <h2 className="text-2xl font-bold mb-4">{problem.title}</h2>
+
+            {problem.difficulty && (
+              <div className={`${getDifficultyColor()} text-white font-bold rounded-full px-3 py-1 text-sm w-24 mb-4 text-center`}>
+                {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
+              </div>
+            )}
+
+            <div 
+              className={`prose max-w-none ${darkMode ? 'prose-invert' : ''}`}
+              dangerouslySetInnerHTML={{ __html: problem.problemHtml }}
+            />
+          </div>
+        );
+
+      case "list":
+        return (
+          <div className={`p-4 h-full overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+            <ProblemListTab onProblemClick={(slug) => {
+              const url = `https://leetcode.com/problems/${slug}`;
+              handleFetchLeetcodeProblemClick(url);
+              setLeetcodeUrl(url);
+              setActiveLeftTab("problem");
+            }} />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={`flex flex-col h-screen ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       <Header />
       <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-200 border-gray-300'} border-b`}>
         <div className="flex justify-between items-center">
-          <div className={`w-24 py-2 text-center ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>Problem</div>
+          <div className="flex">
+            {leftTabs.map((tab) => (
+              <div key={tab.key} className={`w-30 py-2 mr-1 text-center cursor-pointer ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'}`} onClick={() => setActiveLeftTab(tab.key)}>{tab.label}</div>
+            ))}
+          </div>
           <button
             onClick={toggleDarkMode}
             className="p-2 mr-4 rounded-full cursor-pointer focus:outline-none"
@@ -269,40 +339,7 @@ const PracticeRoom = () => {
       <Allotment>
         {/* Problem Pane */}
         <Allotment.Pane preferredSize="25%">
-          <div className={`p-4 h-full overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-            <div className="flex items-center mb-4">
-              <input
-                type="text"
-                className={`flex-grow px-4 py-2 rounded-l ${darkMode ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'} border focus:outline-none focus:ring-2 focus:ring-purple-600`}
-                placeholder="Enter Leetcode URL"
-                onChange={(e) => setLeetcodeUrl(e.target.value)}
-              />
-              <button
-                className={`px-4 py-2 rounded-r bg-[#9266cc] hover:bg-[#b68cec] transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 text-white ${
-                  isFetchLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
-                }`}
-                onClick={handleFetchLeetcodeProblemClick}
-                disabled={isFetchLoading}
-              >
-                {isFetchLoading ? (
-                  <div className="w-5 h-5 border-2 border-t-purple-300 border-gray-700 rounded-full animate-spin mx-auto"></div>
-                ) : "Fetch"}
-              </button>
-            </div>
-
-            <h2 className="text-2xl font-bold mb-4">{problem.title}</h2>
-
-            {problem.difficulty && (
-              <div className={`${getDifficultyColor()} text-white font-bold rounded-full px-3 py-1 text-sm w-24 mb-4 text-center`}>
-                {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
-              </div>
-            )}
- 
-            <div 
-              className={`prose max-w-none ${darkMode ? 'prose-invert' : ''}`}
-              dangerouslySetInnerHTML={{ __html: problem.problemHtml }}
-            />
-          </div>
+          {renderLeftPane()}
         </Allotment.Pane>
 
         {/* Editor and Console Pane */}

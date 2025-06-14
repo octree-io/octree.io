@@ -17,7 +17,13 @@ const Header = () => {
   const navigate = useNavigate();
 
   const handleLogoClick = () => {
-    navigate("/");
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      navigate("/home");
+    } else {
+      navigate("/");
+    }
   };
 
   const handleProfileClick = () => {

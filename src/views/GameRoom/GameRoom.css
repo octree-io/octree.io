@@ -216,6 +216,7 @@
   display: flex;
   justify-content: space-between;
   min-height: 44px;
+  margin-bottom: 10px;
 }
 
 .game-room-divider {

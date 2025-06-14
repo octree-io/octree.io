@@ -27,7 +27,7 @@ const GameRoomCountdownTimer = ({ currentRoundStartTime, roundDuration }: Countd
   };
 
   return (
-    <div className="game-room-timer">
+    <div className="font-bold border rounded px-3 flex flex-column items-center justify-center">
       {formatTime(timeRemaining)}
     </div>
   );

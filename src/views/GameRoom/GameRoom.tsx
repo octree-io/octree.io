@@ -455,7 +455,10 @@ const GameRoom = () => {
                   beforeMount={handleEditorWillMount}
                   onMount={(editor) => (editorRef.current = editor)}
                 />
-
+              </div>
+            </Allotment.Pane>
+            <Allotment.Pane preferredSize="15%">
+              <div className="pane">
                 <div className="game-room-editor-controls">
                   {roundData && 
                     <GameRoomCountdownTimer
@@ -478,10 +481,7 @@ const GameRoom = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </Allotment.Pane>
-            <Allotment.Pane preferredSize="15%">
-              <div className="pane">
+
                 {consoleOutput.submissionId && (
                   <div>
                     <div>Run ID: <code>{consoleOutput.submissionId}</code></div>

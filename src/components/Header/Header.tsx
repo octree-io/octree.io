@@ -6,7 +6,7 @@ import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { jwtDecode } from "jwt-decode";
 import apiClient, { TokenExpiredError } from "../../client/APIClient";
 import { isTokenValid } from "../../helper/tokenValidation";
-import { FaGithub } from "react-icons/fa";
+import { FaDiscord, FaGithub } from "react-icons/fa";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -111,6 +111,12 @@ const Header = () => {
 
       {isLoggedIn ? (
         <div className="header-right-section">
+          <div className="mr-2 hover:text-[#9266cc] transition-colors duration-300 ease-in-out">
+            <a href="https://discord.gg/Veq4zDGdt8" target="_blank" rel="noopener noreferrer">
+              <FaDiscord size={35} />
+            </a>
+          </div>
+
           <div className="header-github-container">
             <a href="https://github.com/octree-io" target="_blank" rel="noopener noreferrer" className="header-github-icon">
               <FaGithub size={35} />
@@ -142,6 +148,12 @@ const Header = () => {
         </div>
         ) : (
           <div className="header-right-section">
+            <div className="mr-2 hover:text-[#9266cc] transition-colors duration-300 ease-in-out">
+              <a href="https://discord.gg/Veq4zDGdt8" target="_blank" rel="noopener noreferrer">
+                <FaDiscord size={35} />
+              </a>
+            </div>
+
             <div className="header-github-container">
               <a href="https://github.com/octree-io" target="_blank" rel="noopener noreferrer" className="header-github-icon">
                 <FaGithub size={35} />

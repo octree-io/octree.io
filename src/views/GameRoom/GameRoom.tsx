@@ -290,7 +290,7 @@ const GameRoom = () => {
         <div className="game-room-message-info">
           <div className="game-room-message-content">
             <div className="game-room-user-profile-wrapper chat-message">
-              <img className="user-profile-picture" src={profilePic} width={35} height={35} />
+              <img className="rounded-[5px] object-cover border border-[rgb(212,212,212)] min-w-[35px] min-h-[35px]" src={profilePic} width={35} height={35} />
             </div>
             <div className="game-room-message-group">
               <b>{username}</b>

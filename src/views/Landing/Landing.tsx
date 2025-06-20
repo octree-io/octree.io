@@ -53,8 +53,8 @@ function Landing() {
                 </span>
               </h1>
               <p className="text-xl lg:text-2xl text-gray-600 mb-10 leading-relaxed">
-                Prepare for techincal interviews socially. Join coding rooms, solve LeetCode
-                problems together, and accelerate your programming journey.
+                Prepare for techincal interviews socially. Join coding rooms, solve algorithmic
+                problems together, and accelerate your programming journey today.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button

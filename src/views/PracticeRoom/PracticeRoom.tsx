@@ -210,7 +210,7 @@ const PracticeRoom = () => {
     setMessages(prev => [...prev, {
       prefixEmoji: "💡",
       username: "System",
-      message: "Welcome to the Practice Room! Here you can practice Leetcode problems solo with a timer.",
+      message: "Welcome to the Practice Room! Here you can practice Leetcode problems solo with a timer. If you get stuck and need a hint, press the Hint button to get an AI generated hint.",
       timestamp: new Date().toISOString(),
     }]);
   }, []);

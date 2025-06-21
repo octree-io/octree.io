@@ -433,8 +433,8 @@ const GameRoom = () => {
                     <option value="cpp">C++</option>
                     <option value="csharp">C#</option>
                     <option value="ruby">Ruby</option>
-                    <option value="javascript">JavaScript</option>
-                    <option value="typescript">TypeScript</option>
+                    {/* <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option> */}
                   </select>
                   </div>
                 </div>

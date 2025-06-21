@@ -1,7 +1,7 @@
 # octree.io
 [![MIT License](https://img.shields.io/dub/l/vibe-d.svg)](https://github.com/octree-io/octree.io/blob/main/LICENSE)
 
-`octree.io` is a platform where you can solve Leetcode-style interview problems socially.
+`octree.io` is a platform where you can solve algorithmic interview problems socially.
 
 ![Landing](https://github.com/user-attachments/assets/53dc2955-7611-410f-a71e-26b3d24d803a)
 
@@ -9,7 +9,7 @@
 ## Features
 - Account creation with the ability to change your profile picture and username
 - Lobby which is a Slack-like chat room
-- Game rooms which consist of Leetcode-style problems that have a timer and are cycled and also contain a chatbox
+- Game rooms which consist of algorithmic problems that have a timer and are cycled and also contain a chatbox
 - Trivia rooms which are a way to quiz yourself for whichever types of questions you choose and get graded at the end by GenAI. Was originally built for studying interview trivia problems such as OS concepts, databases, concurrency, etc.
 
 ## High Level Overview

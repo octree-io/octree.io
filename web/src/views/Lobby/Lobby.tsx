@@ -100,25 +100,6 @@ export default function Lobby() {
 
   return (
     <div className="lobby">
-      {/* WORKSPACE ICON RAIL */}
-      <div className="ws-sidebar">
-        <div className="ws-logo">ot</div>
-        <div className="ws-sep" />
-        <button className="ws-icon active" title="Lobby">💬</button>
-        <button className="ws-icon" title="Practice rooms" onClick={() => navigate('/room/room-1')}>🎮</button>
-        <button className="ws-icon" title="Problems">📝
-          <span className="ws-badge">3</span>
-        </button>
-        <button className="ws-icon" title="Leaderboard">🏆</button>
-        <div className="ws-bottom">
-          <button className="ws-icon" title="Settings">⚙️</button>
-          <div className="ws-user-avatar" style={{ background: user.color }}>
-            {user.username.slice(0, 2).toUpperCase()}
-            <span className="ws-status" />
-          </div>
-        </div>
-      </div>
-
       {/* CHANNEL SIDEBAR */}
       <div className="ch-sidebar">
         <div className="ch-header">

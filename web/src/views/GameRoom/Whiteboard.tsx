@@ -1,9 +1,10 @@
 import { Excalidraw } from '@excalidraw/excalidraw'
 import '@excalidraw/excalidraw/index.css'
+import './Whiteboard.css'
 
 export default function Whiteboard() {
   return (
-    <div style={{ height: '100%', position: 'relative' }}>
+    <div className="wb-wrap">
       <Excalidraw
         theme="dark"
         UIOptions={{

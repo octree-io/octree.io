@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useRoom } from '../../hooks/useRoom'
 import { useTimer } from '../../hooks/useTimer'
@@ -6,6 +6,8 @@ import { useChat } from '../../hooks/useChat'
 import { useUser } from '../../contexts/UserContext'
 import type { Participant } from '../../types'
 import './GameRoom.css'
+
+const Whiteboard = lazy(() => import('./Whiteboard'))
 
 type PanelTab = 'problem' | 'peers' | 'notes'
 
@@ -106,31 +108,9 @@ export default function GameRoom() {
 
         {/* WHITEBOARD */}
         <div className="gr-center">
-          <div className="wb-toolbar">
-            {['⬡', '✏️', '▭', '↗', 'T'].map((icon, i) => (
-              <button key={icon} className={`tool-btn ${i === 0 ? 'active' : ''}`}>{icon}</button>
-            ))}
-            <span className="tool-sep" />
-            {['#a78bfa', '#e2e2f0', '#22c55e', '#fbbf24', '#ef4444'].map((c, i) => (
-              <div key={c} className={`color-swatch ${i === 0 ? 'active' : ''}`} style={{ background: c }} />
-            ))}
-            <span className="tool-sep" />
-            <button className="tool-btn">↩</button>
-            <button className="tool-btn">↪</button>
-            <span className="tool-sep" />
-            <button className="tool-btn">−</button>
-            <span className="zoom-label">100%</span>
-            <button className="tool-btn">+</button>
-            <span className="wb-spacer" />
-            <span className="shape-info">3 components · 5 connections</span>
-            <button className="tool-btn">⬇</button>
-          </div>
-
-          <div className="canvas-area">
-            <div className="canvas-inner">
-              <WhiteboardDiagram />
-            </div>
-          </div>
+          <Suspense fallback={<div className="wb-loading">Loading whiteboard…</div>}>
+            <Whiteboard />
+          </Suspense>
         </div>
 
         {/* RIGHT PANEL — room chat */}
@@ -313,82 +293,3 @@ function RoomSeedMessages({ participants }: { participants: Participant[] }) {
   )
 }
 
-function WhiteboardDiagram() {
-  return (
-    <>
-      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-        <defs>
-          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L8,3 z" fill="rgba(167,139,250,0.5)" />
-          </marker>
-        </defs>
-        {CONNECTIONS.map((c, i) => (
-          <line key={i} x1={c[0]} y1={c[1]} x2={c[2]} y2={c[3]}
-            stroke={c[4] ?? 'rgba(167,139,250,0.35)'} strokeWidth="1.5"
-            strokeDasharray={c[5] ?? undefined} markerEnd="url(#arrow)" />
-        ))}
-      </svg>
-
-      {SECTION_LABELS.map(s => (
-        <div key={s.label} className="canvas-section" style={{ left: s.x, top: s.y, width: s.w }}>{s.label}</div>
-      ))}
-
-      {NODES.map(n => (
-        <div key={n.label} className={`node ${n.selected ? 'selected' : ''} ${n.highlighted ? 'highlighted' : ''}`} style={{ left: n.x, top: n.y }}>
-          <span className="node-icon">{n.icon}</span>
-          <span className="node-label">{n.label}</span>
-          <span className="node-sub">{n.sub}</span>
-        </div>
-      ))}
-
-      {ANNOTATIONS.map(a => (
-        <div key={a.text} className="annotation" style={{ left: a.x, top: a.y }}>{a.text}</div>
-      ))}
-
-      <div className="sticky-note" style={{ left: 300, top: 380 }}>
-        📝 TODO: Add Redis cache layer between Stream Svc and DB for view counts
-      </div>
-    </>
-  )
-}
-
-/* ── Static diagram data ── */
-
-const NODES = [
-  { label: 'Client', sub: 'Web / Mobile', icon: '🖥', x: 80, y: 95, selected: false, highlighted: false },
-  { label: 'Load Balancer', sub: 'L7 — nginx', icon: '⚖️', x: 310, y: 95, selected: false, highlighted: true },
-  { label: 'API Gateway', sub: 'Auth + routing', icon: '🔀', x: 550, y: 95, selected: true, highlighted: false },
-  { label: 'Upload Svc', sub: 'Chunked upload', icon: '📤', x: 730, y: 185, selected: false, highlighted: false },
-  { label: 'Stream Svc', sub: 'HLS / DASH', icon: '▶️', x: 730, y: 295, selected: false, highlighted: false },
-  { label: 'Search Svc', sub: 'Elasticsearch', icon: '🔍', x: 730, y: 450, selected: false, highlighted: false },
-  { label: 'Object Store', sub: 'S3-compatible', icon: '🗄', x: 960, y: 190, selected: false, highlighted: false },
-  { label: 'Message Queue', sub: 'Kafka', icon: '📨', x: 960, y: 310, selected: false, highlighted: false },
-  { label: 'CDN', sub: 'Cloudflare', icon: '⚡', x: 960, y: 450, selected: false, highlighted: false },
-  { label: 'Transcoder', sub: 'FFmpeg workers', icon: '🔧', x: 960, y: 590, selected: false, highlighted: false },
-  { label: 'Metadata DB', sub: 'PostgreSQL', icon: '🗃', x: 730, y: 570, selected: false, highlighted: false },
-]
-
-const CONNECTIONS: [number, number, number, number, string?, string?][] = [
-  [185, 120, 310, 120],
-  [415, 120, 550, 120],
-  [640, 105, 730, 200],
-  [640, 130, 730, 310],
-  [840, 215, 960, 215],
-  [840, 225, 960, 335],
-  [1060, 335, 1060, 590, 'rgba(167,139,250,0.35)'],
-  [840, 330, 960, 465],
-  [730, 465, 730, 570],
-]
-
-const SECTION_LABELS = [
-  { label: 'Client Layer', x: 60, y: 60, w: 180 },
-  { label: 'Ingress / Routing', x: 290, y: 60, w: 380 },
-  { label: 'Service Layer', x: 700, y: 150, w: 400 },
-]
-
-const ANNOTATIONS = [
-  { text: 'HTTPS', x: 230, y: 103 },
-  { text: 'gRPC', x: 470, y: 103 },
-  { text: 'PUT', x: 900, y: 198 },
-  { text: 'publish', x: 880, y: 350 },
-]

@@ -30,5 +30,9 @@ export function useRoom(roomId: string) {
     ctx.updateProgress(roomId, user.id, progress)
   }
 
-  return { room, myParticipant, peers, isHost, join, start, finish, submit, setProgress }
+  function nextRound() {
+    ctx.nextRound(roomId)
+  }
+
+  return { room, myParticipant, peers, isHost, join, start, finish, submit, setProgress, nextRound }
 }

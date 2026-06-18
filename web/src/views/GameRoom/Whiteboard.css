@@ -1,11 +1,12 @@
 .wb-wrap {
   height: 100%;
   position: relative;
-  background: #0f0f14;
+  background: #fbfdfb;
 }
 
-/* Override Excalidraw's outer canvas area color to match app bg */
-.wb-wrap .excalidraw.theme--dark {
-  --color-surface-low: #0f0f14;
-  --color-surface-mid: #0f0f14;
+.wb-wrap .excalidraw.theme--light {
+  --color-surface-low: #fbfdfb;
+  --color-surface-mid: #edf3ef;
+  --color-primary: #0f766e;
+  --color-primary-darker: #0b5f59;
 }

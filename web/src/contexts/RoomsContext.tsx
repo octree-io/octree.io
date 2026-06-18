@@ -12,6 +12,7 @@ interface RoomsContextValue {
   submitWork: (roomId: string, userId: string) => void
   createRoom: (problemSlug: string, host: User) => Room
   updateProgress: (roomId: string, userId: string, progress: number) => void
+  nextRound: (roomId: string) => void
 }
 
 const RoomsContext = createContext<RoomsContextValue | null>(null)
@@ -75,6 +76,22 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     }))
   }
 
+  function nextRound(roomId: string) {
+    setRooms(prev => prev.map(room => {
+      if (room.id !== roomId) return room
+      const otherProblems = PROBLEMS.filter(p => p.id !== room.problem.id)
+      const nextProblem = otherProblems[Math.floor(Math.random() * otherProblems.length)] ?? PROBLEMS[0]
+      return {
+        ...room,
+        problem: nextProblem,
+        status: 'active',
+        startedAt: new Date(),
+        finishedAt: undefined,
+        participants: room.participants.map(p => ({ ...p, submittedAt: undefined, progress: 0 })),
+      }
+    }))
+  }
+
   function createRoom(problemSlug: string, host: User): Room {
     const problem = PROBLEMS.find(p => p.slug === problemSlug) ?? PROBLEMS[0]
     const room: Room = {
@@ -91,7 +108,7 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <RoomsContext value={{ rooms, getRoom, joinRoom, startRoom, finishRoom, submitWork, createRoom, updateProgress }}>
+    <RoomsContext value={{ rooms, getRoom, joinRoom, startRoom, finishRoom, submitWork, createRoom, updateProgress, nextRound }}>
       {children}
     </RoomsContext>
   )

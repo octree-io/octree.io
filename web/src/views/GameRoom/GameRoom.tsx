@@ -15,7 +15,7 @@ export default function GameRoom() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
   const { user } = useUser()
-  const { room, peers, myParticipant, isHost, start, finish, submit } = useRoom(roomId ?? '')
+  const { room, peers, myParticipant, isHost, start, finish, submit, nextRound } = useRoom(roomId ?? '')
   const { formatted, remaining, pct } = useTimer(room?.startedAt, room?.durationMinutes ?? 45)
   const { messages, draft, setDraft, send } = useChat(roomId ?? '')
   const [tab, setTab] = useState<PanelTab>('problem')
@@ -28,7 +28,7 @@ export default function GameRoom() {
   if (!room) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100svh', color: 'var(--muted)' }}>
-        Room not found. <button style={{ marginLeft: 8, color: 'var(--purple)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => navigate('/lobby')}>Back to lobby</button>
+        Room not found. <button style={{ marginLeft: 8, color: 'var(--purple)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => navigate('/')}>Back home</button>
       </div>
     )
   }
@@ -43,7 +43,7 @@ export default function GameRoom() {
     <div className="game-room">
       {/* TOP BAR */}
       <div className="gr-topbar">
-        <div className="gr-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/lobby')}>
+        <div className="gr-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
           oct<span>ree</span>.io
         </div>
         <span className="gr-sep" />
@@ -81,7 +81,10 @@ export default function GameRoom() {
           {room.status === 'active' && isHost && (
             <button className="btn-sm btn-sm-ghost" onClick={finish}>Finish Room</button>
           )}
-          <button className="btn-sm btn-sm-danger" onClick={() => navigate('/lobby')}>Leave</button>
+          {room.status === 'finished' && isHost && (
+            <button className="btn-sm btn-sm-primary" onClick={nextRound}>Next Question →</button>
+          )}
+          <button className="btn-sm btn-sm-danger" onClick={() => navigate('/')}>Leave</button>
         </div>
       </div>
 
@@ -109,7 +112,7 @@ export default function GameRoom() {
         {/* WHITEBOARD */}
         <div className="gr-center">
           <Suspense fallback={<div className="wb-loading">Loading whiteboard…</div>}>
-            <Whiteboard />
+            <Whiteboard key={room.startedAt?.getTime() ?? 0} />
           </Suspense>
         </div>
 

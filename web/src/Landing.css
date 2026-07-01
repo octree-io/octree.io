@@ -34,21 +34,6 @@
 .landing > *:not(.bg-grid):not(.bg-glow) { position: relative; z-index: 1; }
 
 /* ---------- shared ---------- */
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-.brand-dot { color: var(--purple); }
-.logo-mark { stroke: var(--purple); stroke-width: 1.7; fill: none; overflow: visible; }
-.logo-mark circle { fill: var(--surface); stroke: var(--purple); }
-.logo-mark .node-root { fill: var(--purple); }
-
 .grad {
   background: linear-gradient(100deg, var(--purple) 10%, var(--blue) 90%);
   -webkit-background-clip: text;

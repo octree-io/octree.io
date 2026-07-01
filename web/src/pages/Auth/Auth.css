@@ -42,22 +42,6 @@
   padding: 22px 28px;
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.1rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  text-decoration: none;
-}
-.brand-dot { color: var(--purple); }
-.logo-mark { stroke: var(--purple); stroke-width: 1.7; fill: none; overflow: visible; }
-.logo-mark circle { fill: var(--surface); stroke: var(--purple); }
-.logo-mark .node-root { fill: var(--purple); }
-
 /* ---------- main & card ---------- */
 .auth-main {
   flex: 1;

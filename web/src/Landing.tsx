@@ -1,22 +1,6 @@
 import './Landing.css'
 import { Link } from 'react-router-dom'
-
-/* ---------- small building blocks ---------- */
-
-function Logo() {
-  return (
-    <svg className="logo-mark" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-      <line x1="16" y1="7" x2="8" y2="20" />
-      <line x1="16" y1="7" x2="24" y2="20" />
-      <line x1="8" y1="20" x2="8" y2="26" />
-      <line x1="8" y1="20" x2="24" y2="20" />
-      <circle cx="16" cy="7" r="3.5" className="node-root" />
-      <circle cx="8" cy="20" r="3" />
-      <circle cx="24" cy="20" r="3" />
-      <circle cx="8" cy="26" r="2.4" />
-    </svg>
-  )
-}
+import { BrandLink } from './components/Logo'
 
 function Avatar({ initials, color, size = 30 }: { initials: string; color: string; size?: number }) {
   return (
@@ -137,10 +121,7 @@ export default function Landing() {
 
       {/* NAV */}
       <header className="nav">
-        <Link className="brand" to="/">
-          <Logo />
-          <span>octree<span className="brand-dot">.io</span></span>
-        </Link>
+        <BrandLink to="/" size={26} />
         <nav className="nav-links">
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
@@ -234,7 +215,7 @@ export default function Landing() {
       {/* FOOTER */}
       <footer className="footer">
         <div className="footer-brand">
-          <Link className="brand" to="/"><Logo /><span>octree<span className="brand-dot">.io</span></span></Link>
+          <BrandLink to="/" />
           <p>Practice technical interviews with other humans.</p>
         </div>
         <div className="footer-cols">

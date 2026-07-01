@@ -19,13 +19,21 @@ function RoomMock() {
   return (
     <div className="mock" aria-hidden="true">
       <div className="mock-topbar">
-        <div className="mock-dots"><span /><span /><span /></div>
-        <div className="mock-room-name">room · two-pointer-tuesday</div>
+        <div className="mock-room-info">
+          <span className="mock-room-name">two-pointer-tuesday</span>
+          <span className="chip chip-medium">Medium</span>
+        </div>
+        <div className="mock-people-stack" title="4 in the room">
+          <Avatar initials="RØ" color="#3b6fb0" size={22} />
+          <Avatar initials="AV" color="#7c5cbf" size={22} />
+          <Avatar initials="JN" color="#2f7d5b" size={22} />
+          <Avatar initials="MK" color="#b45f9d" size={22} />
+        </div>
         <div className="mock-timer">18:24</div>
       </div>
 
       <div className="mock-body">
-        <aside className="mock-side">
+        <aside className="mock-problem-panel">
           <div className="mock-label">problem</div>
           <div className="mock-problem-title">Koko Eating Bananas</div>
           <span className="chip chip-medium">Medium</span>
@@ -33,21 +41,19 @@ function RoomMock() {
             Return the minimum integer <code>k</code> such that Koko can eat all
             bananas within <code>h</code> hours.
           </p>
-
-          <div className="mock-label mock-label-mt">in the room · 4</div>
-          <ul className="mock-people">
-            <li><Avatar initials="AV" color="#7c5cbf" size={26} /> <span>ava</span><span className="dot-live" /></li>
-            <li><Avatar initials="JN" color="#2f7d5b" size={26} /> <span>jonas</span><span className="dot-live" /></li>
-            <li><Avatar initials="MK" color="#b45f9d" size={26} /> <span>mikael</span><span className="dot-typing">typing…</span></li>
-            <li><Avatar initials="RØ" color="#3b6fb0" size={26} /> <span>you</span><span className="dot-live" /></li>
-          </ul>
         </aside>
 
         <div className="mock-editor">
-          <div className="mock-editor-tabs">
-            <span className="mock-tab mock-tab-active">solution.py</span>
+          <div className="mock-tabs-row">
+            <div className="mock-ptabs">
+              <span className="mock-ptab mock-ptab-mine"><Avatar initials="RØ" color="#3b6fb0" size={16} />you</span>
+              <span className="mock-ptab"><Avatar initials="AV" color="#7c5cbf" size={16} />ava</span>
+              <span className="mock-ptab"><Avatar initials="JN" color="#2f7d5b" size={16} />jonas</span>
+              <span className="mock-ptab"><Avatar initials="MK" color="#b45f9d" size={16} />mikael</span>
+            </div>
             <span className="mock-lang">Python 3</span>
           </div>
+
           <pre className="mock-code">
 <span className="l"><span className="kw">class</span> <span className="ty">Solution</span>:</span>
 <span className="l">  <span className="kw">def</span> <span className="fn">minEatingSpeed</span>(self, piles, h):</span>
@@ -59,16 +65,27 @@ function RoomMock() {
 <span className="l">      <span className="kw">else</span>: lo = mid + <span className="nm">1</span></span>
 <span className="l cur">    <span className="kw">return</span> lo<span className="caret" /></span>
           </pre>
-          <div className="mock-results">
-            <span className="pass">✓ 27 / 27 tests passed</span>
-            <span className="mock-runtime">14 ms · beats 91%</span>
+
+          <div className="mock-run-panel">
+            <div className="mock-run-header">
+              <span className="mock-run-title">Console</span>
+              <span className="mock-run-btn mock-run-btn-ghost">▶ Run</span>
+              <span className="mock-run-btn mock-run-btn-primary">⬆ Submit</span>
+            </div>
+            <div className="mock-results">
+              <span className="pass">✓ 27 / 27 tests passed</span>
+              <span className="mock-runtime">14 ms · beats 91%</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mock-chat">
-        <span className="chat-msg"><b>jonas</b> binary search on the answer 🔥</span>
-        <span className="chat-msg"><b>ava</b> yeah, ceil-div was the trick</span>
+      <div className="mock-chatbar">
+        <span className="mock-label">chat</span>
+        <div className="mock-chat">
+          <span className="chat-msg"><b>jonas</b> binary search on the answer 🔥</span>
+          <span className="chat-msg"><b>ava</b> yeah, ceil-div was the trick</span>
+        </div>
       </div>
     </div>
   )
@@ -206,7 +223,7 @@ export default function Landing() {
           <h2>A room is open right now.</h2>
           <p>Grab a problem, meet a few people, and turn prep into something you actually look forward to.</p>
           <div className="hero-cta">
-            <Link className="btn-primary btn-lg" to="/signup">Enter a room</Link>
+            <Link className="btn-primary btn-lg" to="/room/demo">Enter a room</Link>
             <Link className="btn-ghost btn-lg" to="/lobby">See what’s live →</Link>
           </div>
         </div>

@@ -312,8 +312,8 @@
 }
 .mock-chatbar .mock-label { margin-bottom: 0; flex-shrink: 0; }
 .mock-chat { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; min-width: 0; }
-.chat-msg { font-size: 0.74rem; color: var(--muted); line-height: 1.4; white-space: nowrap; }
-.chat-msg b { color: var(--text); font-weight: 600; margin-right: 5px; }
+.mock-chat .chat-msg { font-size: 0.74rem; color: var(--muted); line-height: 1.4; white-space: nowrap; }
+.mock-chat .chat-msg b { color: var(--text); font-weight: 600; margin-right: 5px; }
 
 /* ---------- sections ---------- */
 .section {

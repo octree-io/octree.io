@@ -660,13 +660,22 @@ export default function Room() {
           <div className="sidebar-section sidebar-chat">
             <div className="sidebar-label">chat</div>
             <div className="chat-messages">
-              {messages.map(m => (
-                <div key={m.id} className="chat-msg">
-                  <span className="chat-author" style={{ color: m.color }}>{m.author}</span>
-                  <span className="chat-ts">{m.ts}</span>
-                  <span className="chat-text">{m.text}</span>
-                </div>
-              ))}
+              {messages.map(m => {
+                const p = allParticipants.find(x => x.name === m.author)
+                const initials = p?.initials ?? m.author.slice(0, 2).toUpperCase()
+                return (
+                  <div key={m.id} className="chat-msg">
+                    <Avatar initials={initials} color={m.color} size={36} />
+                    <div className="chat-msg-body">
+                      <div className="chat-msg-head">
+                        <span className="chat-author" style={{ color: m.color }}>{m.author}</span>
+                        <span className="chat-ts">{m.ts}</span>
+                      </div>
+                      <span className="chat-text">{m.text}</span>
+                    </div>
+                  </div>
+                )
+              })}
               <div ref={chatEndRef} />
             </div>
             <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendMessage() }}>

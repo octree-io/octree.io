@@ -1,4 +1,5 @@
 import './Landing.css'
+import { Link } from 'react-router-dom'
 
 /* ---------- small building blocks ---------- */
 
@@ -136,18 +137,18 @@ export default function Landing() {
 
       {/* NAV */}
       <header className="nav">
-        <a className="brand" href="/">
+        <Link className="brand" to="/">
           <Logo />
           <span>octree<span className="brand-dot">.io</span></span>
-        </a>
+        </Link>
         <nav className="nav-links">
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           <a href="#lobby">Lobby</a>
         </nav>
         <div className="nav-actions">
-          <a className="link-muted" href="/login">Sign in</a>
-          <a className="btn-primary nav-cta" href="/signup">Get started</a>
+          <Link className="link-muted" to="/login">Sign in</Link>
+          <Link className="btn-primary nav-cta" to="/signup">Get started</Link>
         </div>
       </header>
 
@@ -165,7 +166,7 @@ export default function Landing() {
             you go, and share every solution the moment the round ends.
           </p>
           <div className="hero-cta">
-            <a className="btn-primary btn-lg" href="/signup">Start practicing free</a>
+            <Link className="btn-primary btn-lg" to="/signup">Start practicing free</Link>
             <a className="btn-ghost btn-lg" href="#lobby">Browse the lobby →</a>
           </div>
           <div className="hero-trust">
@@ -224,8 +225,8 @@ export default function Landing() {
           <h2>A room is open right now.</h2>
           <p>Grab a problem, meet a few people, and turn prep into something you actually look forward to.</p>
           <div className="hero-cta">
-            <a className="btn-primary btn-lg" href="/signup">Enter a room</a>
-            <a className="btn-ghost btn-lg" href="/lobby">See what’s live →</a>
+            <Link className="btn-primary btn-lg" to="/signup">Enter a room</Link>
+            <Link className="btn-ghost btn-lg" to="/lobby">See what’s live →</Link>
           </div>
         </div>
       </section>
@@ -233,7 +234,7 @@ export default function Landing() {
       {/* FOOTER */}
       <footer className="footer">
         <div className="footer-brand">
-          <a className="brand" href="/"><Logo /><span>octree<span className="brand-dot">.io</span></span></a>
+          <Link className="brand" to="/"><Logo /><span>octree<span className="brand-dot">.io</span></span></Link>
           <p>Practice technical interviews with other humans.</p>
         </div>
         <div className="footer-cols">
@@ -241,7 +242,7 @@ export default function Landing() {
             <span className="footer-h">Product</span>
             <a href="#features">Features</a>
             <a href="#lobby">Lobby</a>
-            <a href="/signup">Get started</a>
+            <Link to="/signup">Get started</Link>
           </div>
           <div>
             <span className="footer-h">Company</span>

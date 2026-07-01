@@ -1,19 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
-import { SendIcon, PlayIcon, UploadIcon, LeaveIcon, CheckIcon, XIcon } from '../../components/Icons'
+import {
+  SendIcon, PlayIcon, UploadIcon, LeaveIcon,
+  CheckIcon, XIcon, LockIcon,
+} from '../../components/Icons'
 import './Room.css'
 
 /* ---------- types ---------- */
 
 type Lang = 'python' | 'java' | 'cpp' | 'javascript'
 
-interface Participant {
+interface OtherParticipant {
   id: string
   name: string
   color: string
   initials: string
   status: 'online' | 'typing' | 'submitted'
+  lang: Lang
+  code: string
 }
 
 interface ChatMessage {
@@ -33,20 +39,18 @@ interface TestResult {
   runtimeMs: number
 }
 
-/* ---------- mock data ---------- */
+/* ---------- constants ---------- */
 
-const PARTICIPANTS: Participant[] = [
-  { id: '1', name: 'ava',    color: '#7c5cbf', initials: 'AV', status: 'submitted' },
-  { id: '2', name: 'jonas',  color: '#2f7d5b', initials: 'JN', status: 'online'    },
-  { id: '3', name: 'mikael', color: '#b45f9d', initials: 'MK', status: 'typing'    },
-  { id: '4', name: 'you',    color: '#3b6fb0', initials: 'RØ', status: 'online'    },
-]
+const TOTAL_SECS = 30 * 60
+const ME_ID = 'you'
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  { id: 1, author: 'ava',    color: '#7c5cbf', text: 'classic two sum — hashmap all the way', ts: '18:02' },
-  { id: 2, author: 'jonas',  color: '#2f7d5b', text: 'or two pointer if sorted?',              ts: '18:03' },
-  { id: 3, author: 'ava',    color: '#7c5cbf', text: 'not sorted here so hashmap O(n)',         ts: '18:04' },
-]
+const LANG_LABELS: Record<Lang, string> = {
+  python: 'Python 3', java: 'Java', cpp: 'C++20', javascript: 'JavaScript',
+}
+
+const MONACO_LANG: Record<Lang, string> = {
+  python: 'python', java: 'java', cpp: 'cpp', javascript: 'javascript',
+}
 
 const STARTER: Record<Lang, string> = {
   python: `from typing import List
@@ -106,11 +110,159 @@ var twoSum = function(nums, target) {
 `,
 }
 
-const LANG_LABELS: Record<Lang, string> = {
-  python: 'Python 3', java: 'Java', cpp: 'C++', javascript: 'JavaScript',
-}
+const OTHERS: OtherParticipant[] = [
+  {
+    id: '1', name: 'ava', color: '#7c5cbf', initials: 'AV',
+    status: 'submitted', lang: 'python',
+    code: `from typing import List
 
-const TOTAL_SECS = 30 * 60
+class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        seen = {}
+        for i, n in enumerate(nums):
+            complement = target - n
+            if complement in seen:
+                return [seen[complement], i]
+            seen[n] = i
+        return []
+`,
+  },
+  {
+    id: '2', name: 'jonas', color: '#2f7d5b', initials: 'JN',
+    status: 'online', lang: 'java',
+    code: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // brute force, optimize later
+        for (int i = 0; i < nums.length; i++) {
+            for (int j = i + 1; j < nums.length; j++) {
+                if (nums[i] + nums[j] == target) {
+                    return new int[] { i, j };
+                }
+            }
+        }
+        return new int[] {};
+    }
+}
+`,
+  },
+  {
+    id: '3', name: 'mikael', color: '#b45f9d', initials: 'MK',
+    status: 'typing', lang: 'javascript',
+    code: `var twoSum = function(nums, target) {
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const comp = target - nums[i];
+        if (map.has(comp
+`,
+  },
+  {
+    id: '4', name: 'liam', color: '#c2703d', initials: 'LM',
+    status: 'online', lang: 'cpp',
+    code: `class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        // TODO
+    }
+};
+`,
+  },
+  {
+    id: '5', name: 'sofia', color: '#3d9a9a', initials: 'SF',
+    status: 'online', lang: 'python',
+    code: `class Solution:
+    def twoSum(self, nums, target):
+        pass
+`,
+  },
+  {
+    id: '6', name: 'dev', color: '#8a63d2', initials: 'DV',
+    status: 'typing', lang: 'java',
+    code: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+
+    }
+}
+`,
+  },
+  {
+    id: '7', name: 'priya', color: '#d24f7c', initials: 'PR',
+    status: 'online', lang: 'javascript',
+    code: `var twoSum = function(nums, target) {
+
+};
+`,
+  },
+  {
+    id: '8', name: 'tom', color: '#5c8fd6', initials: 'TM',
+    status: 'submitted', lang: 'python',
+    code: `class Solution:
+    def twoSum(self, nums, target):
+        d = {}
+        for i, x in enumerate(nums):
+            if target - x in d:
+                return [d[target - x], i]
+            d[x] = i
+`,
+  },
+]
+
+const INITIAL_MESSAGES: ChatMessage[] = [
+  { id: 1, author: 'ava',   color: '#7c5cbf', text: 'classic two sum — hashmap all the way', ts: '18:02' },
+  { id: 2, author: 'jonas', color: '#2f7d5b', text: 'or two pointer if sorted?',              ts: '18:03' },
+  { id: 3, author: 'ava',   color: '#7c5cbf', text: 'not sorted here so hashmap O(n)',         ts: '18:04' },
+]
+
+/* ---------- monaco theme ---------- */
+
+function setupTheme(monaco: Monaco) {
+  // the JS/TS language service second-guesses valid JS (and anything
+  // mis-tokenized as JS) with bogus syntax/semantic errors — this is just
+  // an editor for arbitrary solutions, not a real project, so turn it off.
+  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: true,
+  })
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: true,
+  })
+
+  monaco.editor.defineTheme('octree', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'keyword',           foreground: 'a78bfa' },
+      { token: 'keyword.control',   foreground: 'a78bfa' },
+      { token: 'storage.type',      foreground: 'a78bfa' },
+      { token: 'type',              foreground: '60a5fa' },
+      { token: 'type.identifier',   foreground: '60a5fa' },
+      { token: 'entity.name.type',  foreground: '60a5fa' },
+      { token: 'string',            foreground: 'a3e635' },
+      { token: 'number',            foreground: 'fbbf24' },
+      { token: 'comment',           foreground: '6b7280', fontStyle: 'italic' },
+      { token: 'delimiter',         foreground: 'e2e2f0' },
+      { token: 'variable',          foreground: 'e2e2f0' },
+    ],
+    colors: {
+      'editor.background':                  '#0f0f14',
+      'editor.foreground':                  '#e2e2f0',
+      'editorLineNumber.foreground':        '#2a2a3d',
+      'editorLineNumber.activeForeground':  '#7b7b9a',
+      'editor.selectionBackground':         '#a78bfa33',
+      'editor.lineHighlightBackground':     '#16161f',
+      'editorCursor.foreground':            '#a78bfa',
+      'editor.inactiveSelectionBackground': '#a78bfa1a',
+      'editorIndentGuide.background1':      '#2a2a3d',
+      'editorIndentGuide.activeBackground1':'#3a3a5c',
+      'scrollbarSlider.background':         '#2a2a3d80',
+      'scrollbarSlider.hoverBackground':    '#3a3a5c',
+      'editorWidget.background':            '#16161f',
+      'editorSuggestWidget.background':     '#16161f',
+      'editorSuggestWidget.border':         '#2a2a3d',
+      'editorSuggestWidget.selectedBackground': '#232336',
+    },
+  })
+}
 
 /* ---------- sub-components ---------- */
 
@@ -122,52 +274,94 @@ function Avatar({ initials, color, size = 28 }: { initials: string; color: strin
   )
 }
 
-function StatusDot({ status }: { status: Participant['status'] }) {
-  return <span className={`status-dot status-${status}`} title={status} />
-}
-
-/* ---------- main component ---------- */
+/* ---------- main ---------- */
 
 export default function Room() {
-  const [lang, setLang]               = useState<Lang>('python')
-  const [code, setCode]               = useState(STARTER['python'])
-  const [timeLeft, setTimeLeft]       = useState(TOTAL_SECS)
-  const [messages, setMessages]       = useState<ChatMessage[]>(INITIAL_MESSAGES)
-  const [chatInput, setChatInput]     = useState('')
-  const [runLoading, setRunLoading]   = useState(false)
+  /* panel widths */
+  const [leftW,  setLeftW]  = useState(300)
+  const [rightW, setRightW] = useState(268)
+  const drag = useRef<{ side: 'left' | 'right'; lastX: number } | null>(null)
+
+  /* editor — one code buffer per language, so switching langs preserves progress */
+  const [lang, setLang] = useState<Lang>('python')
+  const [codeByLang, setCodeByLang] = useState<Record<Lang, string>>(STARTER)
+  const [activeTab, setActiveTab] = useState<string>(ME_ID)
+  const myCode = codeByLang[lang]
+
+  /* room */
+  const [timeLeft,      setTimeLeft]      = useState(TOTAL_SECS)
+  const [messages,      setMessages]      = useState<ChatMessage[]>(INITIAL_MESSAGES)
+  const [chatInput,     setChatInput]     = useState('')
+  const [runLoading,    setRunLoading]    = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
-  const [results, setResults]         = useState<TestResult[] | null>(null)
-  const [submitted, setSubmitted]     = useState(false)
+  const [results,       setResults]       = useState<TestResult[] | null>(null)
+  const [submitted,     setSubmitted]     = useState(false)
+
   const chatEndRef = useRef<HTMLDivElement>(null)
   const msgId      = useRef(INITIAL_MESSAGES.length + 1)
 
-  /* countdown timer */
+  /* resize — global listeners added once */
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!drag.current) return
+      const dx = e.clientX - drag.current.lastX
+      drag.current.lastX = e.clientX
+      if (drag.current.side === 'left') {
+        setLeftW(w => Math.max(220, Math.min(520, w + dx)))
+      } else {
+        setRightW(w => Math.max(200, Math.min(440, w - dx)))
+      }
+    }
+    function onUp() {
+      drag.current = null
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup',   onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup',   onUp)
+    }
+  }, [])
+
+  function startDrag(side: 'left' | 'right', e: React.MouseEvent) {
+    e.preventDefault()
+    drag.current = { side, lastX: e.clientX }
+    document.body.style.cursor    = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
+
+  /* timer */
   useEffect(() => {
     const t = setInterval(() => setTimeLeft(s => Math.max(0, s - 1)), 1000)
     return () => clearInterval(t)
   }, [])
 
-  /* scroll chat to bottom on new message */
+  /* scroll chat */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   function fmtTime(s: number) {
-    const m = Math.floor(s / 60).toString().padStart(2, '0')
+    const m   = Math.floor(s / 60).toString().padStart(2, '0')
     const sec = (s % 60).toString().padStart(2, '0')
     return `${m}:${sec}`
   }
 
   function timerClass() {
     if (timeLeft > 10 * 60) return 'timer-green'
-    if (timeLeft > 5 * 60)  return 'timer-yellow'
+    if (timeLeft > 5  * 60) return 'timer-yellow'
     return 'timer-red'
   }
 
   function switchLang(l: Lang) {
     setLang(l)
-    setCode(STARTER[l])
     setResults(null)
+  }
+
+  function updateMyCode(v: string) {
+    setCodeByLang(prev => ({ ...prev, [lang]: v }))
   }
 
   async function handleRun() {
@@ -175,9 +369,9 @@ export default function Room() {
     setResults(null)
     await new Promise(r => setTimeout(r, 1100))
     setResults([
-      { index: 1, input: 'nums = [2,7,11,15], target = 9', expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 8  },
-      { index: 2, input: 'nums = [3,2,4], target = 6',     expected: '[1,2]', got: '[1,2]', passed: true,  runtimeMs: 4  },
-      { index: 3, input: 'nums = [3,3], target = 6',       expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 3  },
+      { index: 1, input: 'nums=[2,7,11,15], target=9', expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 8 },
+      { index: 2, input: 'nums=[3,2,4], target=6',     expected: '[1,2]', got: '[1,2]', passed: true,  runtimeMs: 4 },
+      { index: 3, input: 'nums=[3,3], target=6',       expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 3 },
     ])
     setRunLoading(false)
   }
@@ -186,11 +380,11 @@ export default function Room() {
     setSubmitLoading(true)
     await new Promise(r => setTimeout(r, 1400))
     setResults([
-      { index: 1,  input: 'nums = [2,7,11,15], target = 9', expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 8  },
-      { index: 2,  input: 'nums = [3,2,4], target = 6',     expected: '[1,2]', got: '[1,2]', passed: true,  runtimeMs: 4  },
-      { index: 3,  input: 'nums = [3,3], target = 6',       expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 3  },
-      { index: 4,  input: 'nums = [1,2,3,4], target = 7',   expected: '[2,3]', got: '[2,3]', passed: true,  runtimeMs: 6  },
-      { index: 5,  input: 'nums = [0,4,3,0], target = 0',   expected: '[0,3]', got: '[0,3]', passed: true,  runtimeMs: 5  },
+      { index: 1, input: 'nums=[2,7,11,15], target=9', expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 8 },
+      { index: 2, input: 'nums=[3,2,4], target=6',     expected: '[1,2]', got: '[1,2]', passed: true,  runtimeMs: 4 },
+      { index: 3, input: 'nums=[3,3], target=6',       expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 3 },
+      { index: 4, input: 'nums=[1,2,3,4], target=7',   expected: '[2,3]', got: '[2,3]', passed: true,  runtimeMs: 6 },
+      { index: 5, input: 'nums=[0,4,3,0], target=0',   expected: '[0,3]', got: '[0,3]', passed: true,  runtimeMs: 5 },
     ])
     setSubmitted(true)
     setSubmitLoading(false)
@@ -209,9 +403,18 @@ export default function Room() {
     setChatInput('')
   }
 
-  const passedCount = results?.filter(r => r.passed).length ?? 0
-  const totalCount  = results?.length ?? 0
-  const allPassed   = results !== null && passedCount === totalCount
+  const viewingOther      = activeTab !== ME_ID
+  const activeOther       = OTHERS.find(p => p.id === activeTab)
+  const passedCount       = results?.filter(r => r.passed).length ?? 0
+  const totalCount        = results?.length ?? 0
+  const allPassed         = results !== null && passedCount === totalCount
+
+  const me: OtherParticipant = {
+    id: ME_ID, name: 'you', color: '#3b6fb0', initials: 'RØ',
+    status: submitted ? 'submitted' : 'online', lang,
+    code: myCode,
+  }
+  const allParticipants = [me, ...OTHERS]
 
   return (
     <div className="room">
@@ -225,17 +428,15 @@ export default function Room() {
           <span className="chip chip-medium">Medium</span>
         </div>
 
-        <div className={`room-timer ${timerClass()}`}>
-          {fmtTime(timeLeft)}
-        </div>
+        <div className={`room-timer ${timerClass()}`}>{fmtTime(timeLeft)}</div>
 
         <div className="topbar-right">
           <div className="topbar-avatars">
-            {PARTICIPANTS.slice(0, 4).map(p => (
+            {allParticipants.slice(0, 4).map(p => (
               <Avatar key={p.id} initials={p.initials} color={p.color} size={26} />
             ))}
           </div>
-          <Link to="/" className="btn-leave" title="Leave room">
+          <Link to="/" className="btn-leave">
             <LeaveIcon />
             Leave
           </Link>
@@ -243,7 +444,10 @@ export default function Room() {
       </header>
 
       {/* ── BODY ── */}
-      <div className="room-body">
+      <div
+        className="room-body"
+        style={{ gridTemplateColumns: `${leftW}px 4px 1fr 4px ${rightW}px` }}
+      >
 
         {/* ── PROBLEM PANEL ── */}
         <aside className="room-problem">
@@ -251,7 +455,6 @@ export default function Room() {
             <h2 className="problem-title">Two Sum</h2>
             <span className="chip chip-easy">Easy</span>
           </div>
-
           <div className="problem-content">
             <p>
               Given an array of integers <code>nums</code> and an integer <code>target</code>,
@@ -260,25 +463,22 @@ export default function Room() {
             <p>
               You may assume that each input would have <strong>exactly one solution</strong>,
               and you may not use the same element twice.
+              You can return the answer in any order.
             </p>
-            <p>You can return the answer in any order.</p>
 
             <h3 className="problem-section">Examples</h3>
-
             <div className="example-block">
-              <div><span className="ex-label">Input</span> <code>nums = [2,7,11,15], target = 9</code></div>
-              <div><span className="ex-label">Output</span> <code>[0,1]</code></div>
-              <div><span className="ex-label">Explanation</span> <code>nums[0] + nums[1] == 9</code></div>
+              <div><span className="ex-label">Input</span><code>nums = [2,7,11,15], target = 9</code></div>
+              <div><span className="ex-label">Output</span><code>[0,1]</code></div>
+              <div><span className="ex-label">Why</span><code>nums[0] + nums[1] == 9</code></div>
             </div>
-
             <div className="example-block">
-              <div><span className="ex-label">Input</span> <code>nums = [3,2,4], target = 6</code></div>
-              <div><span className="ex-label">Output</span> <code>[1,2]</code></div>
+              <div><span className="ex-label">Input</span><code>nums = [3,2,4], target = 6</code></div>
+              <div><span className="ex-label">Output</span><code>[1,2]</code></div>
             </div>
-
             <div className="example-block">
-              <div><span className="ex-label">Input</span> <code>nums = [3,3], target = 6</code></div>
-              <div><span className="ex-label">Output</span> <code>[0,1]</code></div>
+              <div><span className="ex-label">Input</span><code>nums = [3,3], target = 6</code></div>
+              <div><span className="ex-label">Output</span><code>[0,1]</code></div>
             </div>
 
             <h3 className="problem-section">Constraints</h3>
@@ -291,113 +491,165 @@ export default function Room() {
           </div>
         </aside>
 
+        {/* ── LEFT RESIZE HANDLE ── */}
+        <div className="resize-handle" onMouseDown={e => startDrag('left', e)} />
+
         {/* ── EDITOR PANEL ── */}
         <div className="room-editor">
-          {/* language tabs */}
-          <div className="editor-tabbar">
-            {(Object.keys(LANG_LABELS) as Lang[]).map(l => (
-              <button
-                key={l}
-                className={`editor-tab${lang === l ? ' editor-tab-active' : ''}`}
-                onClick={() => switchLang(l)}
-              >
-                {LANG_LABELS[l]}
-              </button>
-            ))}
-          </div>
 
-          {/* code area — replace with Monaco in production */}
-          <div className="editor-wrap">
-            <div className="editor-lines" aria-hidden="true">
-              {code.split('\n').map((_, i) => (
-                <span key={i}>{i + 1}</span>
+          {/* participant tabs + language selector */}
+          <div className="participant-tabs">
+            <div className="ptab-list">
+              {/* your tab — always first */}
+              <button
+                className={`ptab ptab-mine${activeTab === ME_ID ? ' ptab-active' : ''}`}
+                onClick={() => setActiveTab(ME_ID)}
+              >
+                <Avatar initials="RØ" color="#3b6fb0" size={20} />
+                <span className="ptab-name">you</span>
+                <span className="ptab-you-dot" />
+              </button>
+              {OTHERS.map(p => (
+                <button
+                  key={p.id}
+                  className={`ptab${activeTab === p.id ? ' ptab-active' : ''}`}
+                  onClick={() => setActiveTab(p.id)}
+                >
+                  <Avatar initials={p.initials} color={p.color} size={20} />
+                  <span className="ptab-name">{p.name}</span>
+                </button>
               ))}
             </div>
-            <textarea
-              className="editor-textarea"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              spellCheck={false}
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-          </div>
 
-          {/* toolbar */}
-          <div className="editor-toolbar">
-            <div className="toolbar-left">
-              {submitted && <span className="submit-badge">✓ submitted</span>}
-            </div>
-            <div className="toolbar-right">
-              <button
-                className="btn-run"
-                onClick={handleRun}
-                disabled={runLoading || submitLoading}
-              >
-                <PlayIcon />
-                {runLoading ? 'Running…' : 'Run'}
-              </button>
-              <button
-                className="btn-submit-code btn-primary"
-                onClick={handleSubmit}
-                disabled={runLoading || submitLoading || submitted}
-              >
-                <UploadIcon />
-                {submitLoading ? 'Submitting…' : 'Submit'}
-              </button>
+            <div className="ptab-lang">
+              {viewingOther && activeOther ? (
+                <span className="lang-badge">{LANG_LABELS[activeOther.lang]}</span>
+              ) : (
+                <select
+                  className="lang-select"
+                  value={lang}
+                  onChange={e => switchLang(e.target.value as Lang)}
+                >
+                  {(Object.keys(LANG_LABELS) as Lang[]).map(l => (
+                    <option key={l} value={l}>{LANG_LABELS[l]}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
-          {/* test results drawer */}
-          {results && (
-            <div className="results-drawer">
-              <div className="results-header">
-                <span className={allPassed ? 'results-pass' : 'results-fail'}>
-                  {allPassed ? '✓' : '✗'} {passedCount} / {totalCount} tests passed
-                </span>
-                {results[0] && (
-                  <span className="results-runtime">
-                    avg {Math.round(results.reduce((a, r) => a + r.runtimeMs, 0) / results.length)} ms
-                  </span>
-                )}
+          {/* editor body */}
+          <div className="editor-body">
+            {viewingOther && activeOther ? (
+              /* blurred readonly view */
+              <div className="blurred-editor">
+                <pre className="blurred-code">{activeOther.code}</pre>
+                <div className="blur-overlay">
+                  <LockIcon />
+                  <span>Solutions unlock when the round ends</span>
+                </div>
               </div>
-              <div className="results-cases">
-                {results.map(r => (
-                  <div key={r.index} className={`result-case${r.passed ? ' result-pass' : ' result-fail'}`}>
-                    <span className="result-icon">{r.passed ? <CheckIcon /> : <XIcon />}</span>
-                    <span className="result-label">Case {r.index}</span>
-                    <span className="result-input">{r.input}</span>
-                    {!r.passed && (
-                      <span className="result-diff">
-                        expected <code>{r.expected}</code> got <code>{r.got}</code>
-                      </span>
-                    )}
-                    <span className="result-ms">{r.runtimeMs}ms</span>
+            ) : (
+              /* your live Monaco editor */
+              <Editor
+                language={MONACO_LANG[lang]}
+                value={myCode}
+                onChange={v => updateMyCode(v ?? '')}
+                theme="octree"
+                beforeMount={setupTheme}
+                options={{
+                  fontSize: 13,
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontLigatures: true,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  lineNumbers: 'on',
+                  padding: { top: 14, bottom: 14 },
+                  wordWrap: 'off',
+                  tabSize: 4,
+                  renderWhitespace: 'selection',
+                  smoothScrolling: true,
+                  cursorBlinking: 'phase',
+                  cursorSmoothCaretAnimation: 'on',
+                  overviewRulerBorder: false,
+                  hideCursorInOverviewRuler: true,
+                  scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 5 },
+                }}
+              />
+            )}
+          </div>
+
+          {/* run panel — always visible; hosts run/submit and their output */}
+          <div className="run-panel">
+            <div className="run-panel-header">
+              <span className="run-panel-title">Console</span>
+              {!viewingOther && submitted && <span className="submit-badge">✓ submitted</span>}
+              {!viewingOther && (
+                <div className="run-panel-actions">
+                  <button className="btn-run" onClick={handleRun} disabled={runLoading || submitLoading}>
+                    <PlayIcon />{runLoading ? 'Running…' : 'Run'}
+                  </button>
+                  <button
+                    className="btn-submit-code btn-primary"
+                    onClick={handleSubmit}
+                    disabled={runLoading || submitLoading || submitted}
+                  >
+                    <UploadIcon />{submitLoading ? 'Submitting…' : 'Submit'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="run-panel-body">
+              {viewingOther ? (
+                <div className="run-panel-empty">Read-only — you're viewing {activeOther?.name}'s code.</div>
+              ) : runLoading || submitLoading ? (
+                <div className="run-panel-empty">{submitLoading ? 'Submitting…' : 'Running against test cases…'}</div>
+              ) : results ? (
+                <>
+                  <div className="results-header">
+                    <span className={allPassed ? 'results-pass' : 'results-fail'}>
+                      {allPassed ? '✓' : '✗'} {passedCount} / {totalCount} tests passed
+                    </span>
+                    <span className="results-runtime">
+                      avg {Math.round(results.reduce((a, r) => a + r.runtimeMs, 0) / results.length)} ms
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <div className="results-cases">
+                    {results.map(r => (
+                      <div key={r.index} className={`result-case${r.passed ? ' result-pass' : ' result-fail'}`}>
+                        <span className="result-icon">{r.passed ? <CheckIcon /> : <XIcon />}</span>
+                        <span className="result-label">Case {r.index}</span>
+                        <span className="result-input">{r.input}</span>
+                        {!r.passed && (
+                          <span className="result-diff">
+                            expected <code>{r.expected}</code> got <code>{r.got}</code>
+                          </span>
+                        )}
+                        <span className="result-ms">{r.runtimeMs}ms</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="run-panel-empty">Run your code to see test results here.</div>
+              )}
             </div>
-          )}
+          </div>
         </div>
+
+        {/* ── RIGHT RESIZE HANDLE ── */}
+        <div className="resize-handle" onMouseDown={e => startDrag('right', e)} />
 
         {/* ── SIDEBAR ── */}
         <aside className="room-sidebar">
-
-          {/* participants */}
           <div className="sidebar-section sidebar-participants">
-            <div className="sidebar-label">in the room · {PARTICIPANTS.length}</div>
+            <div className="sidebar-label">in the room · {allParticipants.length}</div>
             <ul className="participants-list">
-              {PARTICIPANTS.map(p => (
-                <li key={p.id} className="participant-row">
-                  <Avatar initials={p.initials} color={p.color} size={28} />
-                  <span className="participant-name">{p.name}</span>
-                  <StatusDot status={p.status} />
-                  {p.status === 'submitted' && (
-                    <span className="participant-submitted">submitted</span>
-                  )}
-                  {p.status === 'typing' && (
-                    <span className="participant-typing">typing…</span>
-                  )}
+              {allParticipants.map(p => (
+                <li key={p.id} className={`participant-row${p.id === ME_ID ? ' participant-you' : ''}`}>
+                  <Avatar initials={p.initials} color={p.color} size={26} />
+                  <span className="participant-name">{p.id === ME_ID ? 'you' : p.name}</span>
                 </li>
               ))}
             </ul>
@@ -405,23 +657,19 @@ export default function Room() {
 
           <div className="sidebar-divider" />
 
-          {/* chat */}
           <div className="sidebar-section sidebar-chat">
             <div className="sidebar-label">chat</div>
             <div className="chat-messages">
               {messages.map(m => (
                 <div key={m.id} className="chat-msg">
                   <span className="chat-author" style={{ color: m.color }}>{m.author}</span>
-                  <span className="chat-text">{m.text}</span>
                   <span className="chat-ts">{m.ts}</span>
+                  <span className="chat-text">{m.text}</span>
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
-            <form
-              className="chat-input-row"
-              onSubmit={e => { e.preventDefault(); sendMessage() }}
-            >
+            <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendMessage() }}>
               <input
                 className="chat-input"
                 placeholder="message…"

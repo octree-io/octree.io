@@ -4,10 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "worker": "tsx watch src/worker/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:worker": "node dist/worker/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

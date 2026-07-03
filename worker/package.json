@@ -1,0 +1,28 @@
+{
+  "name": "@octree/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "bullmq": "^5.79.2",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.4",
+    "ioredis": "5.10.1",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.19.12": true,
+    "esbuild@0.28.1": true,
+    "msgpackr-extract@3.0.4": true
+  }
+}

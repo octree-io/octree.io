@@ -1,10 +1,7 @@
 import { Worker } from "bullmq";
-import { env } from "../config.js";
-import { connection } from "../queue/connection.js";
-import {
-  SUBMISSIONS_QUEUE,
-  type SubmissionJobData,
-} from "../queue/submissions.js";
+import { env } from "./config.js";
+import { connection } from "./queue/connection.js";
+import { SUBMISSIONS_QUEUE, type SubmissionJobData } from "./queue/submissions.js";
 import { markSubmissionFailed, processSubmission } from "./processor.js";
 
 const worker = new Worker<SubmissionJobData>(

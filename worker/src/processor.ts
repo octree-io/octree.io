@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { submissions } from "../db/schema.js";
-import { createSubmission, waitForResult } from "../clients/judge0.js";
+import { db } from "./db/index.js";
+import { submissions } from "./db/schema.js";
+import { createSubmission, waitForResult } from "./clients/judge0.js";
 
 /**
  * Execute one queued submission end-to-end:
@@ -11,7 +11,7 @@ import { createSubmission, waitForResult } from "../clients/judge0.js";
  *   4. persist the decoded result and mark it `completed`
  *
  * Throws on any failure so BullMQ can retry. On the final attempt the worker's
- * `failed` handler flips the row to `failed` (see worker/index.ts).
+ * `failed` handler flips the row to `failed` (see index.ts).
  */
 export async function processSubmission(submissionId: string): Promise<void> {
   const submission = await db.query.submissions.findFirst({

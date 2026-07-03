@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { submissions } from "../db/schema.js";
-import { createSubmission, waitForResult } from "../judge0/client.js";
+import { createSubmission, waitForResult } from "../clients/judge0.js";
 
 /**
  * Execute one queued submission end-to-end:

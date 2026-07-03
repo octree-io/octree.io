@@ -478,18 +478,11 @@ export default function Room() {
         <div className="topbar-left">
           <BrandLink to="/" size={20} />
           <span className="topbar-sep" aria-hidden="true" />
-          <span className="topbar-room-name">two-pointer-tuesday</span>
-          <span className="chip chip-medium">Medium</span>
         </div>
 
         <div className={`room-timer ${timerClass()}`}>{fmtTime(timeLeft)}</div>
 
         <div className="topbar-right">
-          <div className="topbar-avatars">
-            {allParticipants.slice(0, 4).map(p => (
-              <Avatar key={p.id} initials={p.initials} color={p.color} size={26} />
-            ))}
-          </div>
           <Link to="/" className="btn-leave">
             <LeaveIcon />
             Leave

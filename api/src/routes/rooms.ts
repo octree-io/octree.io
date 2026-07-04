@@ -4,14 +4,21 @@ import { z } from "zod";
 import { db } from "../db/index.js";
 import { rooms, roomParticipants } from "../db/schema.js";
 import { ApiError } from "../middleware/error.js";
+import { encodeRoomSlug, resolveRoomId } from "../lib/roomSlug.js";
 
 export const roomsRouter = Router();
 
-// Parse a numeric :id route param, or throw a clean 400.
+// Resolve an :id route param to the numeric room id. Accepts a word slug
+// (noise-tortoise-sun) or a bare number; throws a clean 400 otherwise.
 function parseId(raw: string): number {
-  const id = Number(raw);
-  if (!Number.isInteger(id) || id <= 0) throw new ApiError(400, "Invalid id");
+  const id = resolveRoomId(raw);
+  if (id === null) throw new ApiError(400, "Invalid id");
   return id;
+}
+
+// Attach the URL-friendly slug to a room row without altering stored data.
+function withSlug<T extends { id: number }>(room: T): T & { slug: string | null } {
+  return { ...room, slug: encodeRoomSlug(room.id) };
 }
 
 // GET /rooms  — list open + active rooms
@@ -25,7 +32,7 @@ roomsRouter.get("/", async (_req, res, next) => {
       },
       orderBy: (r, { desc }) => [desc(r.createdAt)],
     });
-    res.json(rows);
+    res.json(rows.map(withSlug));
   } catch (err) {
     next(err);
   }
@@ -43,7 +50,7 @@ roomsRouter.get("/:id", async (req, res, next) => {
       },
     });
     if (!room) throw new ApiError(404, "Room not found");
-    res.json(room);
+    res.json(withSlug(room));
   } catch (err) {
     next(err);
   }
@@ -61,7 +68,7 @@ roomsRouter.post("/", async (req, res, next) => {
   try {
     const data = createRoomSchema.parse(req.body);
     const [room] = await db.insert(rooms).values(data).returning();
-    res.status(201).json(room);
+    res.status(201).json(withSlug(room));
   } catch (err) {
     next(err);
   }
@@ -108,7 +115,7 @@ roomsRouter.post("/:id/start", async (req, res, next) => {
       .returning();
 
     if (!updated) throw new ApiError(409, "Room cannot be started");
-    res.json(updated);
+    res.json(withSlug(updated));
   } catch (err) {
     next(err);
   }
@@ -124,7 +131,7 @@ roomsRouter.post("/:id/finish", async (req, res, next) => {
       .returning();
 
     if (!updated) throw new ApiError(409, "Room cannot be finished");
-    res.json(updated);
+    res.json(withSlug(updated));
   } catch (err) {
     next(err);
   }

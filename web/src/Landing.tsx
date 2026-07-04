@@ -1,6 +1,7 @@
 import './Landing.css'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { BrandLink } from './components/Logo'
+import { randomRoomSlug } from './lib/roomSlug'
 
 function Avatar({ initials, color, size = 30 }: { initials: string; color: string; size?: number }) {
   return (
@@ -131,6 +132,10 @@ const steps = [
 ]
 
 export default function Landing() {
+  const navigate = useNavigate()
+  // Spawn a fresh, shareable worded room (e.g. /room/noise-tortoise-sun).
+  const enterRoom = () => navigate(`/room/${randomRoomSlug()}`)
+
   return (
     <div className="landing">
       <div className="bg-grid" aria-hidden="true" />
@@ -223,7 +228,7 @@ export default function Landing() {
           <h2>A room is open right now.</h2>
           <p>Grab a problem, meet a few people, and turn prep into something you actually look forward to.</p>
           <div className="hero-cta">
-            <Link className="btn-primary btn-lg" to="/room/demo">Enter a room</Link>
+            <button type="button" className="btn-primary btn-lg" onClick={enterRoom}>Enter a room</button>
             <Link className="btn-ghost btn-lg" to="/lobby">See what’s live →</Link>
           </div>
         </div>

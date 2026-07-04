@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { rooms, problems } from "../db/schema.js";
 import { env } from "../config.js";
+import { resolveRoomId } from "../lib/roomSlug.js";
 import type { ProblemPayload, RoundPayload, RealtimeServer } from "./types.js";
 
 type RoomRow = typeof rooms.$inferSelect;
@@ -25,11 +26,12 @@ function roundLengthSeconds(room: RoomRow): number {
   return env.roundSeconds ?? room.durationMinutes * 60;
 }
 
-// The standalone Chat channels use slugs like "general" which are never rows in
-// `rooms`; only a purely-numeric key can be a practice-room id, so we skip the
-// DB work for everything else.
+// Practice rooms are addressed either by a numeric id or a word slug
+// (noise-tortoise-sun), both of which resolve to the numeric primary key. The
+// standalone Chat channels ("general", "lobby:general", …) resolve to null, so
+// we skip the DB work for them.
 function toRoomId(roomId: string): number | null {
-  return /^\d+$/.test(roomId) ? Number(roomId) : null;
+  return resolveRoomId(roomId);
 }
 
 async function loadRoom(roomId: string): Promise<RoomRow | null> {

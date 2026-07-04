@@ -13,9 +13,9 @@ const createSubmissionSchema = z.object({
   sourceCode: z.string().min(1).max(100_000),
   stdin: z.string().max(100_000).optional(),
   expectedOutput: z.string().max(100_000).optional(),
-  userId: z.string().uuid().optional(),
-  problemId: z.string().uuid().optional(),
-  roomId: z.string().uuid().optional(),
+  userId: z.number().int().positive().optional(),
+  problemId: z.number().int().positive().optional(),
+  roomId: z.number().int().positive().optional(),
 });
 
 // POST /submissions — persist, enqueue, and return immediately (202).
@@ -52,8 +52,10 @@ submissionsRouter.post("/", async (req, res, next) => {
 // GET /submissions/:id — poll for status + result.
 submissionsRouter.get("/:id", async (req, res, next) => {
   try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) throw new ApiError(400, "Invalid id");
     const submission = await db.query.submissions.findFirst({
-      where: eq(submissions.id, req.params.id),
+      where: eq(submissions.id, id),
     });
     if (!submission) throw new ApiError(404, "Submission not found");
     res.json(submission);

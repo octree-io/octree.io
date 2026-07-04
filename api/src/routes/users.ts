@@ -17,8 +17,10 @@ const SAFE_COLUMNS = {
 // GET /users/:id
 usersRouter.get("/:id", async (req, res, next) => {
   try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) throw new ApiError(400, "Invalid id");
     const user = await db.query.users.findFirst({
-      where: eq(users.id, req.params.id),
+      where: eq(users.id, id),
       columns: SAFE_COLUMNS,
     });
     if (!user) throw new ApiError(404, "User not found");

@@ -616,6 +616,8 @@
   min-height: 0;
 }
 
+.chat-empty { padding: 6px 2px; font-size: 0.82rem; color: var(--muted); font-style: italic; }
+
 .chat-msg {
   display: flex;
   gap: 11px;

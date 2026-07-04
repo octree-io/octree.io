@@ -1,8 +1,18 @@
 CREATE TYPE "public"."difficulty" AS ENUM('easy', 'medium', 'hard');--> statement-breakpoint
 CREATE TYPE "public"."room_status" AS ENUM('waiting', 'active', 'finished');--> statement-breakpoint
 CREATE TYPE "public"."submission_status" AS ENUM('queued', 'processing', 'completed', 'failed');--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "chat_messages" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "chat_messages_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"room_id" text NOT NULL,
+	"author_id" text NOT NULL,
+	"author_name" text NOT NULL,
+	"author_color" text NOT NULL,
+	"body" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "problems" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "problems_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"slug" text NOT NULL,
 	"title" text NOT NULL,
 	"description" text NOT NULL,
@@ -14,30 +24,32 @@ CREATE TABLE IF NOT EXISTS "problems" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "room_participants" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"room_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "room_participants_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"room_id" integer NOT NULL,
+	"user_id" integer NOT NULL,
 	"joined_at" timestamp DEFAULT now() NOT NULL,
 	"submitted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "rooms" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"problem_id" uuid NOT NULL,
-	"host_id" uuid NOT NULL,
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "rooms_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"problem_id" integer NOT NULL,
+	"host_id" integer NOT NULL,
 	"status" "room_status" DEFAULT 'waiting' NOT NULL,
 	"duration_minutes" integer DEFAULT 45 NOT NULL,
 	"max_players" integer DEFAULT 4 NOT NULL,
 	"started_at" timestamp,
 	"finished_at" timestamp,
+	"round_number" integer DEFAULT 1 NOT NULL,
+	"round_ends_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "submissions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid,
-	"problem_id" uuid,
-	"room_id" uuid,
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "submissions_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"user_id" integer,
+	"problem_id" integer,
+	"room_id" integer,
 	"language_id" integer NOT NULL,
 	"source_code" text NOT NULL,
 	"stdin" text,
@@ -59,7 +71,7 @@ CREATE TABLE IF NOT EXISTS "submissions" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "users_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"username" text NOT NULL,
 	"email" text NOT NULL,
 	"password_hash" text NOT NULL,
@@ -110,3 +122,5 @@ DO $$ BEGIN
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "chat_messages_room_created_idx" ON "chat_messages" USING btree ("room_id","created_at");

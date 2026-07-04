@@ -1,27 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { BrandLink } from '../../components/Logo'
 import { SendIcon, XIcon, LockIcon } from '../../components/Icons'
+import { useRoom, initials, type ChatMessage } from '../../lib/socket'
 import './Chat.css'
 
 /* ---------- types ---------- */
-
-interface User {
-  name: string
-  color: string
-  initials: string
-}
-
-interface Member {
-  name: string
-  status: 'online' | 'away' | 'typing'
-}
-
-interface Message {
-  id: number
-  author: string
-  text: string
-  ts: string
-}
 
 interface Room {
   id: string
@@ -34,37 +17,7 @@ interface Room {
   code: string
 }
 
-/* ---------- seed data ---------- */
-
-const ME = 'you'
-
-const USERS: Record<string, User> = {
-  you:    { name: 'you',    color: '#3b6fb0', initials: 'RØ' },
-  ava:    { name: 'ava',    color: '#7c5cbf', initials: 'AV' },
-  jonas:  { name: 'jonas',  color: '#2f7d5b', initials: 'JN' },
-  mikael: { name: 'mikael', color: '#b45f9d', initials: 'MK' },
-  liam:   { name: 'liam',   color: '#c2703d', initials: 'LM' },
-  sofia:  { name: 'sofia',  color: '#3d9a9a', initials: 'SF' },
-  priya:  { name: 'priya',  color: '#d24f7c', initials: 'PR' },
-  tom:    { name: 'tom',    color: '#5c8fd6', initials: 'TM' },
-  dev:    { name: 'dev',    color: '#8a63d2', initials: 'DV' },
-}
-
-function user(name: string): User {
-  return USERS[name] ?? { name, color: '#5c8fd6', initials: name.slice(0, 2).toUpperCase() }
-}
-
-const MEMBERS: Member[] = [
-  { name: 'you',    status: 'online' },
-  { name: 'ava',    status: 'online' },
-  { name: 'jonas',  status: 'online' },
-  { name: 'mikael', status: 'typing' },
-  { name: 'sofia',  status: 'online' },
-  { name: 'priya',  status: 'online' },
-  { name: 'liam',   status: 'away'   },
-  { name: 'tom',    status: 'away'   },
-  { name: 'dev',    status: 'online' },
-]
+/* ---------- seed rooms (the channel directory is still client-side) ---------- */
 
 const INITIAL_ROOMS: Room[] = [
   { id: 'general', name: 'general',       topic: 'Company-wide hangout',                members: 214, private: false, listed: true,  joined: true,  code: 'GEN001' },
@@ -75,25 +28,6 @@ const INITIAL_ROOMS: Room[] = [
   { id: 'offtop',  name: 'off-topic',     topic: 'Coffee, memes & everything else',      members: 201, private: false, listed: true,  joined: false, code: 'OFFT01' },
   { id: 'mentors', name: 'mentors-only',  topic: 'Private mentor circle',                members: 12,  private: true,  listed: false, joined: false, code: 'MNTR24' },
 ]
-
-const SEED_MESSAGES: Record<string, Message[]> = {
-  general: [
-    { id: 1, author: 'ava',   text: "morning everyone ☕ who's grinding today?", ts: '9:02 AM' },
-    { id: 2, author: 'jonas', text: 'me — trying to finally understand segment trees', ts: '9:04 AM' },
-    { id: 3, author: 'jonas', text: 'they keep breaking my brain lol', ts: '9:04 AM' },
-    { id: 4, author: 'sofia', text: 'segment trees click the moment you draw the recursion tree once. promise.', ts: '9:11 AM' },
-    { id: 5, author: 'priya', text: 'welcome to the new folks who joined this week 👋', ts: '9:20 AM' },
-  ],
-  daily: [
-    { id: 1, author: 'mikael', text: "today's is Koko Eating Bananas — binary search on the answer", ts: '8:30 AM' },
-    { id: 2, author: 'liam',   text: 'ah the classic "search over the value space" trick', ts: '8:41 AM' },
-    { id: 3, author: 'ava',    text: 'ceil division is the part people trip on: -(-p // mid)', ts: '8:45 AM' },
-  ],
-  dp: [
-    { id: 1, author: 'sofia', text: 'reminder: top-down + memo first, optimize later', ts: 'Yesterday' },
-    { id: 2, author: 'you',   text: "that's my exact workflow, saves so much debugging", ts: 'Yesterday' },
-  ],
-}
 
 /* ---------- inline icons ---------- */
 
@@ -127,16 +61,21 @@ function CopyIcon({ size = 13 }: { size?: number }) {
   )
 }
 
-function Avatar({ name, size = 36, radius = 8 }: { name: string; size?: number; radius?: number }) {
-  const u = user(name)
+function Avatar({ name, color, size = 36, radius = 8 }: { name: string; color: string; size?: number; radius?: number }) {
   return (
     <div
       className="chat-avatar"
-      style={{ width: size, height: size, background: u.color, fontSize: size * 0.36, borderRadius: radius }}
+      style={{ width: size, height: size, background: color, fontSize: size * 0.36, borderRadius: radius }}
     >
-      {u.initials}
+      {initials(name)}
     </div>
   )
+}
+
+function fmtTime(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 function genCode() {
@@ -147,7 +86,6 @@ function genCode() {
 
 export default function Chat() {
   const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS)
-  const [messagesByRoom, setMessagesByRoom] = useState<Record<string, Message[]>>(SEED_MESSAGES)
   const [activeId, setActiveId] = useState<string>('general')
   const [draft, setDraft] = useState('')
   const [copied, setCopied] = useState(false)
@@ -155,29 +93,23 @@ export default function Chat() {
   const [createOpen, setCreateOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(false)
 
-  const msgId = useRef(1000)
   const endRef = useRef<HTMLDivElement>(null)
 
   const activeRoom = rooms.find(r => r.id === activeId) ?? rooms[0]
-  const messages = messagesByRoom[activeId] ?? []
   const joinedRooms = rooms.filter(r => r.joined)
   const listedRooms = rooms.filter(r => r.listed || r.joined)
+
+  // realtime: chat + presence for the active channel (anonymous)
+  const { messages, participants, you, connected, sendMessage } = useRoom(activeId)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, activeId])
 
-  function nowStamp() {
-    return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  }
-
   function send() {
     const text = draft.trim()
-    if (!text || !activeRoom) return
-    setMessagesByRoom(prev => ({
-      ...prev,
-      [activeRoom.id]: [...(prev[activeRoom.id] ?? []), { id: msgId.current++, author: ME, text, ts: nowStamp() }],
-    }))
+    if (!text) return
+    sendMessage(text)
     setDraft('')
   }
 
@@ -196,8 +128,9 @@ export default function Chat() {
 
   function createRoom(name: string, topic: string, isPrivate: boolean) {
     const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    let id = base || `room-${msgId.current}`
-    if (rooms.some(r => r.id === id)) id = `${id}-${msgId.current}`
+    const suffix = Date.now().toString(36).slice(-4)
+    let id = base || `room-${suffix}`
+    if (rooms.some(r => r.id === id)) id = `${id}-${suffix}`
     setRooms(prev => [
       ...prev,
       {
@@ -222,7 +155,7 @@ export default function Chat() {
     setTimeout(() => setCopied(false), 1400)
   }
 
-  const onlineCount = MEMBERS.filter(m => m.status !== 'away').length
+  const onlineCount = participants.length
 
   return (
     <div className="slack">
@@ -257,12 +190,12 @@ export default function Chat() {
 
         <footer className="side-foot">
           <div className="side-foot-avatar">
-            <Avatar name="you" size={30} radius={8} />
-            <span className="status-dot status-online" />
+            <Avatar name={you?.name ?? 'you'} color={you?.color ?? '#3b6fb0'} size={30} radius={8} />
+            <span className={`status-dot ${connected ? 'status-online' : 'status-away'}`} />
           </div>
           <div className="foot-id">
-            <span className="foot-name">you</span>
-            <span className="foot-status">active</span>
+            <span className="foot-name">{you?.name ?? 'connecting…'}</span>
+            <span className="foot-status">{connected ? 'active' : 'offline'}</span>
           </div>
         </footer>
       </aside>
@@ -296,23 +229,25 @@ export default function Chat() {
                 </p>
               </div>
 
-              {messages.map((m, i) => {
+              {messages.map((m: ChatMessage, i) => {
                 const prev = messages[i - 1]
-                const grouped = prev && prev.author === m.author
-                const u = user(m.author)
+                const grouped = prev && prev.authorId === m.authorId
+                const ts = fmtTime(m.createdAt)
                 return (
                   <div key={m.id} className={`msg${grouped ? ' msg-grouped' : ''}`}>
                     <div className="msg-gutter">
-                      {grouped ? <span className="msg-hovertime">{m.ts}</span> : <Avatar name={m.author} size={36} />}
+                      {grouped ? <span className="msg-hovertime">{ts}</span> : <Avatar name={m.authorName} color={m.authorColor} size={36} />}
                     </div>
                     <div className="msg-body">
                       {!grouped && (
                         <div className="msg-head">
-                          <span className="msg-author" style={{ color: u.color }}>{u.name}</span>
-                          <span className="msg-ts">{m.ts}</span>
+                          <span className="msg-author" style={{ color: m.authorColor }}>
+                            {you && m.authorId === you.id ? 'you' : m.authorName}
+                          </span>
+                          <span className="msg-ts">{ts}</span>
                         </div>
                       )}
-                      <div className="msg-text">{m.text}</div>
+                      <div className="msg-text">{m.body}</div>
                     </div>
                   </div>
                 )
@@ -363,14 +298,16 @@ export default function Chat() {
             <span className="rb-count">{onlineCount} online</span>
           </div>
           <ul className="user-list">
-            {MEMBERS.map(m => (
-              <li key={m.name} className="user-row">
+            {participants.length === 0 && (
+              <li className="user-empty">{connected ? 'No one here yet' : 'Connecting…'}</li>
+            )}
+            {participants.map(p => (
+              <li key={p.id} className="user-row">
                 <div className="user-avatar-wrap">
-                  <Avatar name={m.name} size={26} radius={7} />
-                  <span className={`status-dot status-${m.status}`} />
+                  <Avatar name={p.name} color={p.color} size={26} radius={7} />
+                  <span className="status-dot status-online" />
                 </div>
-                <span className="user-name">{m.name === ME ? 'you' : m.name}</span>
-                {m.status === 'typing' && <span className="user-typing">typing…</span>}
+                <span className="user-name">{you && p.id === you.id ? 'you' : p.name}</span>
               </li>
             ))}
           </ul>

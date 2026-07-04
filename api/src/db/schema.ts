@@ -5,7 +5,7 @@ import {
   timestamp,
   boolean,
   pgEnum,
-  uuid,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -27,7 +27,7 @@ export const submissionStatusEnum = pgEnum("submission_status", [
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
@@ -38,7 +38,7 @@ export const users = pgTable("users", {
 // ─── Problems ────────────────────────────────────────────────────────────────
 
 export const problems = pgTable("problems", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -51,11 +51,11 @@ export const problems = pgTable("problems", {
 // ─── Rooms ───────────────────────────────────────────────────────────────────
 
 export const rooms = pgTable("rooms", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  problemId: uuid("problem_id")
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  problemId: integer("problem_id")
     .notNull()
     .references(() => problems.id),
-  hostId: uuid("host_id")
+  hostId: integer("host_id")
     .notNull()
     .references(() => users.id),
   status: roomStatusEnum("status").notNull().default("waiting"),
@@ -63,33 +63,61 @@ export const rooms = pgTable("rooms", {
   maxPlayers: integer("max_players").notNull().default(4),
   startedAt: timestamp("started_at"),
   finishedAt: timestamp("finished_at"),
+  // Realtime round bookkeeping — the socket server rotates the room's problem
+  // every round and records when the current round ends so late joiners can
+  // sync their countdown.
+  roundNumber: integer("round_number").notNull().default(1),
+  roundEndsAt: timestamp("round_ends_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // ─── Room participants ────────────────────────────────────────────────────────
 
 export const roomParticipants = pgTable("room_participants", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  roomId: uuid("room_id")
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  roomId: integer("room_id")
     .notNull()
     .references(() => rooms.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
+  userId: integer("user_id")
     .notNull()
     .references(() => users.id),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
   submittedAt: timestamp("submitted_at"),
 });
 
+// ─── Chat messages ────────────────────────────────────────────────────────────
+
+// Real-time chat is intentionally decoupled from the `rooms` table: `roomId` is
+// a free-form key so the same table backs both practice rooms (a rooms.id) and
+// the standalone Chat channels (a slug like "general"). Authors are stored
+// denormalised (name + colour) because participants are anonymous for now and
+// have no `users` row.
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    roomId: text("room_id").notNull(),
+    authorId: text("author_id").notNull(), // anonymous, socket-derived id
+    authorName: text("author_name").notNull(),
+    authorColor: text("author_color").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    roomCreatedIdx: index("chat_messages_room_created_idx").on(t.roomId, t.createdAt),
+  }),
+);
+
 // ─── Submissions ──────────────────────────────────────────────────────────────
 
 export const submissions = pgTable("submissions", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
   // Ownership / context. All optional so the executor can also run ad-hoc code
   // that isn't tied to a stored problem or an authenticated user.
-  userId: uuid("user_id").references(() => users.id),
-  problemId: uuid("problem_id").references(() => problems.id),
-  roomId: uuid("room_id").references(() => rooms.id, { onDelete: "cascade" }),
+  userId: integer("user_id").references(() => users.id),
+  problemId: integer("problem_id").references(() => problems.id),
+  roomId: integer("room_id").references(() => rooms.id, { onDelete: "cascade" }),
 
   // What to run.
   languageId: integer("language_id").notNull(), // Judge0 language id

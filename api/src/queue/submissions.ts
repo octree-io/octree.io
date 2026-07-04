@@ -5,7 +5,7 @@ export const SUBMISSIONS_QUEUE = "submissions";
 
 /** Payload carried on the queue — just the id; the worker loads the row. */
 export interface SubmissionJobData {
-  submissionId: string;
+  submissionId: number;
 }
 
 export const submissionsQueue = new Queue<SubmissionJobData>(
@@ -22,10 +22,10 @@ export const submissionsQueue = new Queue<SubmissionJobData>(
 );
 
 /** Enqueue a submission for execution. Keyed by submission id for idempotency. */
-export async function enqueueSubmission(submissionId: string): Promise<void> {
+export async function enqueueSubmission(submissionId: number): Promise<void> {
   await submissionsQueue.add(
     "execute",
     { submissionId },
-    { jobId: submissionId },
+    { jobId: String(submissionId) }, // BullMQ job ids must be strings
   );
 }

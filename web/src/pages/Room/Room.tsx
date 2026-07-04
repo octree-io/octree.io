@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
 import {
   SendIcon, PlayIcon, UploadIcon, LeaveIcon,
   CheckIcon, XIcon, LockIcon,
 } from '../../components/Icons'
+import { useRoom, initials as toInitials } from '../../lib/socket'
 import './Room.css'
 
 /* ---------- types ---------- */
@@ -20,14 +21,6 @@ interface OtherParticipant {
   status: 'online' | 'typing' | 'submitted'
   lang: Lang
   code: string
-}
-
-interface ChatMessage {
-  id: number
-  author: string
-  color: string
-  text: string
-  ts: string
 }
 
 interface TestResult {
@@ -206,12 +199,6 @@ public:
   },
 ]
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  { id: 1, author: 'ava',   color: '#7c5cbf', text: 'classic two sum — hashmap all the way', ts: '18:02' },
-  { id: 2, author: 'jonas', color: '#2f7d5b', text: 'or two pointer if sorted?',              ts: '18:03' },
-  { id: 3, author: 'ava',   color: '#7c5cbf', text: 'not sorted here so hashmap O(n)',         ts: '18:04' },
-]
-
 /* ---------- monaco theme ---------- */
 
 function setupTheme(monaco: Monaco) {
@@ -343,16 +330,26 @@ export default function Room() {
   const myCode = codeByLang[lang]
 
   /* room */
+  const { id: roomId } = useParams<{ id: string }>()
   const [timeLeft,      setTimeLeft]      = useState(TOTAL_SECS)
-  const [messages,      setMessages]      = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [chatInput,     setChatInput]     = useState('')
   const [runLoading,    setRunLoading]    = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [results,       setResults]       = useState<TestResult[] | null>(null)
   const [submitted,     setSubmitted]     = useState(false)
 
+  // realtime: anonymous presence + chat, plus the live problem & round timer
+  const {
+    messages,
+    participants: liveParticipants,
+    you,
+    problem: liveProblem,
+    round,
+    connected,
+    sendMessage: sendChat,
+  } = useRoom(roomId)
+
   const chatEndRef = useRef<HTMLDivElement>(null)
-  const msgId      = useRef(INITIAL_MESSAGES.length + 1)
 
   /* resize — global listeners added once */
   useEffect(() => {
@@ -386,16 +383,32 @@ export default function Room() {
     document.body.style.userSelect = 'none'
   }
 
-  /* timer */
+  /* timer — driven by the server's round deadline when connected, otherwise a
+     local countdown so the room still feels alive offline. */
   useEffect(() => {
-    const t = setInterval(() => setTimeLeft(s => Math.max(0, s - 1)), 1000)
+    function tick() {
+      if (round?.endsAt) {
+        const rem = Math.round((new Date(round.endsAt).getTime() - Date.now()) / 1000)
+        setTimeLeft(Math.max(0, rem))
+      } else {
+        setTimeLeft(s => Math.max(0, s - 1))
+      }
+    }
+    tick()
+    const t = setInterval(tick, 1000)
     return () => clearInterval(t)
-  }, [])
+  }, [round?.endsAt])
+
+  /* a new round means a fresh problem — clear stale run results */
+  useEffect(() => {
+    setResults(null)
+    setSubmitted(false)
+  }, [round?.number])
 
   /* scroll chat */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages.length])
 
   function fmtTime(s: number) {
     const m   = Math.floor(s / 60).toString().padStart(2, '0')
@@ -447,14 +460,15 @@ export default function Room() {
   function sendMessage() {
     const text = chatInput.trim()
     if (!text) return
-    setMessages(prev => [...prev, {
-      id: msgId.current++,
-      author: 'you',
-      color: '#3b6fb0',
-      text,
-      ts: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-    }])
+    sendChat(text)
     setChatInput('')
+  }
+
+  function fmtStamp(iso: string) {
+    const d = new Date(iso)
+    return Number.isNaN(d.getTime())
+      ? ''
+      : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   }
 
   const viewingOther      = activeTab !== ME_ID
@@ -469,6 +483,28 @@ export default function Room() {
     code: myCode,
   }
   const allParticipants = [me, ...OTHERS]
+
+  // "in the room" roster: real socket presence when connected, else the mock.
+  const roster =
+    liveParticipants.length > 0
+      ? liveParticipants.map(p => ({
+          id: p.id,
+          name: you && p.id === you.id ? 'you' : p.name,
+          color: p.color,
+          initials: toInitials(p.name),
+          isYou: !!you && p.id === you.id,
+        }))
+      : allParticipants.map(p => ({
+          id: p.id,
+          name: p.id === ME_ID ? 'you' : p.name,
+          color: p.color,
+          initials: p.initials,
+          isYou: p.id === ME_ID,
+        }))
+
+  const difficultyChip = liveProblem
+    ? `chip-${liveProblem.difficulty}`
+    : 'chip-easy'
 
   return (
     <div className="room">
@@ -498,6 +534,22 @@ export default function Room() {
 
         {/* ── PROBLEM PANEL ── */}
         <aside className="room-problem">
+          {liveProblem ? (
+            <>
+              <div className="problem-header">
+                <h2 className="problem-title">{liveProblem.title}</h2>
+                <span className={`chip ${difficultyChip}`}>
+                  {liveProblem.difficulty[0].toUpperCase() + liveProblem.difficulty.slice(1)}
+                </span>
+              </div>
+              <div className="problem-content">
+                {liveProblem.description.split(/\n{2,}/).map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
+            </>
+          ) : (
+          <>
           <div className="problem-header">
             <h2 className="problem-title">Two Sum</h2>
             <span className="chip chip-easy">Easy</span>
@@ -536,6 +588,8 @@ export default function Room() {
               <li>Only one valid answer exists.</li>
             </ul>
           </div>
+          </>
+          )}
         </aside>
 
         {/* ── LEFT RESIZE HANDLE ── */}
@@ -683,12 +737,12 @@ export default function Room() {
         {/* ── SIDEBAR ── */}
         <aside className="room-sidebar">
           <div className="sidebar-section sidebar-participants">
-            <div className="sidebar-label">in the room · {allParticipants.length}</div>
+            <div className="sidebar-label">in the room · {roster.length}</div>
             <ul className="participants-list">
-              {allParticipants.map(p => (
-                <li key={p.id} className={`participant-row${p.id === ME_ID ? ' participant-you' : ''}`}>
+              {roster.map(p => (
+                <li key={p.id} className={`participant-row${p.isYou ? ' participant-you' : ''}`}>
                   <Avatar initials={p.initials} color={p.color} size={26} />
-                  <span className="participant-name">{p.id === ME_ID ? 'you' : p.name}</span>
+                  <span className="participant-name">{p.name}</span>
                 </li>
               ))}
             </ul>
@@ -699,18 +753,22 @@ export default function Room() {
           <div className="sidebar-section sidebar-chat">
             <div className="sidebar-label">chat</div>
             <div className="chat-messages">
+              {messages.length === 0 && (
+                <div className="chat-empty">{connected ? 'No messages yet — say hi 👋' : 'Connecting…'}</div>
+              )}
               {messages.map(m => {
-                const p = allParticipants.find(x => x.name === m.author)
-                const initials = p?.initials ?? m.author.slice(0, 2).toUpperCase()
+                const isYou = !!you && m.authorId === you.id
                 return (
                   <div key={m.id} className="chat-msg">
-                    <Avatar initials={initials} color={m.color} size={36} />
+                    <Avatar initials={toInitials(m.authorName)} color={m.authorColor} size={36} />
                     <div className="chat-msg-body">
                       <div className="chat-msg-head">
-                        <span className="chat-author" style={{ color: m.color }}>{m.author}</span>
-                        <span className="chat-ts">{m.ts}</span>
+                        <span className="chat-author" style={{ color: m.authorColor }}>
+                          {isYou ? 'you' : m.authorName}
+                        </span>
+                        <span className="chat-ts">{fmtStamp(m.createdAt)}</span>
                       </div>
-                      <span className="chat-text">{m.text}</span>
+                      <span className="chat-text">{m.body}</span>
                     </div>
                   </div>
                 )
@@ -720,7 +778,7 @@ export default function Room() {
             <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendMessage() }}>
               <input
                 className="chat-input"
-                placeholder="message…"
+                placeholder={connected ? 'message…' : 'connecting…'}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
               />

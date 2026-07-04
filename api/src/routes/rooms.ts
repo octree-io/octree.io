@@ -7,6 +7,13 @@ import { ApiError } from "../middleware/error.js";
 
 export const roomsRouter = Router();
 
+// Parse a numeric :id route param, or throw a clean 400.
+function parseId(raw: string): number {
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) throw new ApiError(400, "Invalid id");
+  return id;
+}
+
 // GET /rooms  — list open + active rooms
 roomsRouter.get("/", async (_req, res, next) => {
   try {
@@ -28,7 +35,7 @@ roomsRouter.get("/", async (_req, res, next) => {
 roomsRouter.get("/:id", async (req, res, next) => {
   try {
     const room = await db.query.rooms.findFirst({
-      where: eq(rooms.id, req.params.id),
+      where: eq(rooms.id, parseId(req.params.id)),
       with: {
         problem: true,
         host: { columns: { id: true, username: true } },
@@ -44,8 +51,8 @@ roomsRouter.get("/:id", async (req, res, next) => {
 
 // POST /rooms
 const createRoomSchema = z.object({
-  problemId: z.string().uuid(),
-  hostId: z.string().uuid(),
+  problemId: z.number().int().positive(),
+  hostId: z.number().int().positive(),
   durationMinutes: z.number().int().min(15).max(90).default(45),
   maxPlayers: z.number().int().min(1).max(8).default(4),
 });
@@ -61,12 +68,12 @@ roomsRouter.post("/", async (req, res, next) => {
 });
 
 // POST /rooms/:id/join
-const joinRoomSchema = z.object({ userId: z.string().uuid() });
+const joinRoomSchema = z.object({ userId: z.number().int().positive() });
 
 roomsRouter.post("/:id/join", async (req, res, next) => {
   try {
     const { userId } = joinRoomSchema.parse(req.body);
-    const roomId = req.params.id;
+    const roomId = parseId(req.params.id);
 
     const room = await db.query.rooms.findFirst({
       where: eq(rooms.id, roomId),
@@ -97,7 +104,7 @@ roomsRouter.post("/:id/start", async (req, res, next) => {
     const [updated] = await db
       .update(rooms)
       .set({ status: "active", startedAt: new Date() })
-      .where(and(eq(rooms.id, req.params.id), eq(rooms.status, "waiting")))
+      .where(and(eq(rooms.id, parseId(req.params.id)), eq(rooms.status, "waiting")))
       .returning();
 
     if (!updated) throw new ApiError(409, "Room cannot be started");
@@ -113,7 +120,7 @@ roomsRouter.post("/:id/finish", async (req, res, next) => {
     const [updated] = await db
       .update(rooms)
       .set({ status: "finished", finishedAt: new Date() })
-      .where(and(eq(rooms.id, req.params.id), eq(rooms.status, "active")))
+      .where(and(eq(rooms.id, parseId(req.params.id)), eq(rooms.status, "active")))
       .returning();
 
     if (!updated) throw new ApiError(409, "Room cannot be finished");
@@ -124,7 +131,7 @@ roomsRouter.post("/:id/finish", async (req, res, next) => {
 });
 
 // POST /rooms/:id/submit  — mark participant as submitted
-const submitSchema = z.object({ userId: z.string().uuid() });
+const submitSchema = z.object({ userId: z.number().int().positive() });
 
 roomsRouter.post("/:id/submit", async (req, res, next) => {
   try {
@@ -135,7 +142,7 @@ roomsRouter.post("/:id/submit", async (req, res, next) => {
       .set({ submittedAt: new Date() })
       .where(
         and(
-          eq(roomParticipants.roomId, req.params.id),
+          eq(roomParticipants.roomId, parseId(req.params.id)),
           eq(roomParticipants.userId, userId),
         ),
       )

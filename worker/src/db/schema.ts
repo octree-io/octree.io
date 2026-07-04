@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
 
 // The API owns the canonical schema and migrations. The worker only reads and
 // updates the `submissions` table, so it declares just that table (columns must
@@ -12,11 +12,11 @@ export const submissionStatusEnum = pgEnum("submission_status", [
 ]);
 
 export const submissions = pgTable("submissions", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
-  userId: uuid("user_id"),
-  problemId: uuid("problem_id"),
-  roomId: uuid("room_id"),
+  userId: integer("user_id"),
+  problemId: integer("problem_id"),
+  roomId: integer("room_id"),
 
   languageId: integer("language_id").notNull(),
   sourceCode: text("source_code").notNull(),

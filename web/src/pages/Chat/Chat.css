@@ -350,6 +350,7 @@
   min-width: 0;
 }
 .user-typing { margin-left: auto; font-size: 0.7rem; color: var(--purple); font-style: italic; flex-shrink: 0; }
+.user-empty { padding: 8px 10px; font-size: 0.82rem; color: var(--muted); font-style: italic; }
 
 /* rooms */
 .rb-rooms {

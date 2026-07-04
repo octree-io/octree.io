@@ -13,7 +13,7 @@ import { createSubmission, waitForResult } from "./clients/judge0.js";
  * Throws on any failure so BullMQ can retry. On the final attempt the worker's
  * `failed` handler flips the row to `failed` (see index.ts).
  */
-export async function processSubmission(submissionId: string): Promise<void> {
+export async function processSubmission(submissionId: number): Promise<void> {
   const submission = await db.query.submissions.findFirst({
     where: eq(submissions.id, submissionId),
   });
@@ -63,7 +63,7 @@ export async function processSubmission(submissionId: string): Promise<void> {
 
 /** Mark a submission as failed after retries are exhausted. */
 export async function markSubmissionFailed(
-  submissionId: string,
+  submissionId: number,
   error: string,
 ): Promise<void> {
   await db

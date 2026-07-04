@@ -30,6 +30,35 @@ export async function loadRecentMessages(
   return rows.reverse().map(toPayload);
 }
 
+// Only Chat lobby channels are durably logged. Their room ids carry this prefix
+// (set by the web client); practice Rooms and everything else are ephemeral.
+export const LOBBY_PREFIX = "lobby:";
+
+export function isPersistentRoom(roomId: string): boolean {
+  return roomId.startsWith(LOBBY_PREFIX);
+}
+
+// Ephemeral rooms broadcast chat without touching the DB. Ids count down from
+// -1 so they never collide with the positive serial ids of persisted messages
+// (which matters for React keys on the client).
+let ephemeralSeq = 0;
+
+export function makeEphemeralMessage(
+  roomId: string,
+  author: Identity,
+  body: string,
+): ChatMessagePayload {
+  return {
+    id: --ephemeralSeq,
+    roomId,
+    authorId: author.id,
+    authorName: author.name,
+    authorColor: author.color,
+    body,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export async function saveMessage(
   roomId: string,
   author: Identity,

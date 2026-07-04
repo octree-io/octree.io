@@ -82,6 +82,13 @@ export interface UseRoom {
 }
 
 /**
+ * Namespace for durably-logged Chat lobby channels. Only rooms whose id carries
+ * this prefix have their chat history loaded and persisted; practice Rooms (and
+ * anything else) are ephemeral. Mirrors the rule in api/src/realtime.
+ */
+export const LOBBY_PREFIX = 'lobby:'
+
+/**
  * Join a realtime room (a practice-room UUID or a Chat channel slug) as an
  * anonymous user. Streams chat + presence, and — for practice rooms — the
  * current problem and the round timer, switching when the server rotates it.

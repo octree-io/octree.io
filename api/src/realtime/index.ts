@@ -3,7 +3,12 @@ import { Server } from "socket.io";
 import { env } from "../config.js";
 import { makeIdentity } from "./identity.js";
 import { addPresence, removePresence, listPresence, countPresence } from "./presence.js";
-import { loadRecentMessages, saveMessage } from "./messages.js";
+import {
+  loadRecentMessages,
+  saveMessage,
+  makeEphemeralMessage,
+  isPersistentRoom,
+} from "./messages.js";
 import * as roomTimer from "./roomTimer.js";
 import type {
   ClientToServerEvents,
@@ -48,7 +53,8 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
 
       try {
         const [messages, roundState] = await Promise.all([
-          loadRecentMessages(roomId),
+          // Only Chat lobby channels keep chat history; practice Rooms don't.
+          isPersistentRoom(roomId) ? loadRecentMessages(roomId) : Promise.resolve([]),
           roomTimer.startOrResume(io, roomId),
         ]);
 
@@ -76,7 +82,11 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
       if (!text) return;
 
       try {
-        const msg = await saveMessage(roomId, identity, text.slice(0, MAX_BODY));
+        const trimmed = text.slice(0, MAX_BODY);
+        // Only the Chat lobby persists; every other room just broadcasts.
+        const msg = isPersistentRoom(roomId)
+          ? await saveMessage(roomId, identity, trimmed)
+          : makeEphemeralMessage(roomId, identity, trimmed);
         io.to(roomId).emit("chat:message", msg);
       } catch (err) {
         console.error("[realtime] chat:send failed:", err);

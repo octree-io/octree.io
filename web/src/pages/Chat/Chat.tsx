@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { BrandLink } from '../../components/Logo'
 import { SendIcon, XIcon, LockIcon } from '../../components/Icons'
-import { useRoom, initials, type ChatMessage } from '../../lib/socket'
+import { useRoom, initials, LOBBY_PREFIX, type ChatMessage } from '../../lib/socket'
 import './Chat.css'
 
 /* ---------- types ---------- */
@@ -99,8 +99,9 @@ export default function Chat() {
   const joinedRooms = rooms.filter(r => r.joined)
   const listedRooms = rooms.filter(r => r.listed || r.joined)
 
-  // realtime: chat + presence for the active channel (anonymous)
-  const { messages, participants, you, connected, sendMessage } = useRoom(activeId)
+  // realtime: chat + presence for the active channel (anonymous). Lobby channels
+  // are namespaced so the server durably logs their chat (practice Rooms aren't).
+  const { messages, participants, you, connected, sendMessage } = useRoom(LOBBY_PREFIX + activeId)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })

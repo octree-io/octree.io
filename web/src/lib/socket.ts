@@ -32,6 +32,11 @@ export interface Round {
   endsAt: string | null
 }
 
+export interface LobbyRoomPresence {
+  roomId: number
+  participants: Identity[]
+}
+
 interface RoomState {
   roomId: string
   you: Identity
@@ -46,19 +51,23 @@ interface ServerToClientEvents {
   'chat:message': (p: ChatMessage) => void
   'presence:update': (p: { roomId: string; participants: Identity[] }) => void
   'room:problem': (p: { roomId: string; problem: Problem; round: Round }) => void
+  'lobby:rooms': (p: { rooms: LobbyRoomPresence[] }) => void
+  'lobby:presence': (p: LobbyRoomPresence) => void
   'error:msg': (p: { message: string }) => void
 }
 
 interface ClientToServerEvents {
   'room:join': (p: { roomId: string; name?: string }) => void
   'chat:send': (p: { body: string }) => void
+  'lobby:join': () => void
+  'lobby:leave': () => void
 }
 
 export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>
 
 /* ---------- singleton socket ---------- */
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 let socket: AppSocket | null = null
 
@@ -161,6 +170,47 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   }, [])
 
   return { connected, you, participants, messages, problem, round, sendMessage }
+}
+
+/* ---------- useLobbyPresence hook ---------- */
+
+/**
+ * Subscribe to live occupancy of every practice room, keyed by numeric room id.
+ * The lobby renders each room's people icons from this without joining the room.
+ */
+export function useLobbyPresence(): Map<number, Identity[]> {
+  const [byRoom, setByRoom] = useState<Map<number, Identity[]>>(new Map())
+
+  useEffect(() => {
+    const s = getSocket()
+
+    const onRooms = ({ rooms }: { rooms: LobbyRoomPresence[] }) => {
+      setByRoom(new Map(rooms.map((r) => [r.roomId, r.participants])))
+    }
+    const onPresence = ({ roomId, participants }: LobbyRoomPresence) => {
+      setByRoom((prev) => {
+        const next = new Map(prev)
+        if (participants.length === 0) next.delete(roomId)
+        else next.set(roomId, participants)
+        return next
+      })
+    }
+    const subscribe = () => s.emit('lobby:join')
+
+    s.on('connect', subscribe)
+    s.on('lobby:rooms', onRooms)
+    s.on('lobby:presence', onPresence)
+    if (s.connected) subscribe()
+
+    return () => {
+      s.emit('lobby:leave')
+      s.off('connect', subscribe)
+      s.off('lobby:rooms', onRooms)
+      s.off('lobby:presence', onPresence)
+    }
+  }, [])
+
+  return byRoom
 }
 
 /* ---------- helpers ---------- */

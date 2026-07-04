@@ -31,6 +31,12 @@ export interface RoundPayload {
   endsAt: string | null; // ISO — when the current problem round ends
 }
 
+// Live occupancy of one practice room, as shown in the lobby's room cards.
+export interface LobbyRoomPresence {
+  roomId: number;
+  participants: Identity[];
+}
+
 export interface RoomStatePayload {
   roomId: string;
   you: Identity;
@@ -52,6 +58,9 @@ export interface SendPayload {
 export interface ClientToServerEvents {
   "room:join": (p: JoinPayload) => void;
   "chat:send": (p: SendPayload) => void;
+  // Subscribe/unsubscribe to live occupancy of all rooms (the lobby directory).
+  "lobby:join": () => void;
+  "lobby:leave": () => void;
 }
 
 export interface ServerToClientEvents {
@@ -63,6 +72,9 @@ export interface ServerToClientEvents {
     problem: ProblemPayload;
     round: RoundPayload;
   }) => void;
+  // Lobby: full occupancy snapshot on subscribe, then per-room deltas.
+  "lobby:rooms": (p: { rooms: LobbyRoomPresence[] }) => void;
+  "lobby:presence": (p: LobbyRoomPresence) => void;
   "error:msg": (p: { message: string }) => void;
 }
 

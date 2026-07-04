@@ -28,6 +28,7 @@ roomsRouter.get("/", async (_req, res, next) => {
       where: (r, { inArray }) => inArray(r.status, ["waiting", "active"]),
       with: {
         problem: { columns: { id: true, title: true, difficulty: true, slug: true } },
+        host: { columns: { id: true, username: true } },
         participants: { with: { user: { columns: { id: true, username: true } } } },
       },
       orderBy: (r, { desc }) => [desc(r.createdAt)],

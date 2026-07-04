@@ -32,3 +32,9 @@ export function listPresence(roomId: string): Identity[] {
 export function countPresence(roomId: string): number {
   return rooms.get(roomId)?.size ?? 0;
 }
+
+// Every occupied room with its occupants — used to build the lobby's live
+// aggregate presence across all rooms at once.
+export function presenceEntries(): [string, Identity[]][] {
+  return [...rooms.entries()].map(([roomId, m]) => [roomId, [...m.values()]]);
+}

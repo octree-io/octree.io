@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { env } from "../config.js";
 import { makeIdentity } from "./identity.js";
 import { addPresence, removePresence, listPresence, countPresence } from "./presence.js";
+import { LOBBY_ROOM, lobbySnapshot, broadcastLobbyPresence } from "./lobby.js";
 import {
   loadRecentMessages,
   saveMessage,
@@ -42,6 +43,7 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
         removePresence(prev, socket.id);
         socket.leave(prev);
         io.to(prev).emit("presence:update", { roomId: prev, participants: listPresence(prev) });
+        broadcastLobbyPresence(io, prev);
         if (countPresence(prev) === 0) roomTimer.stop(prev);
       }
 
@@ -72,6 +74,16 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
       }
 
       io.to(roomId).emit("presence:update", { roomId, participants: listPresence(roomId) });
+      broadcastLobbyPresence(io, roomId);
+    });
+
+    // Lobby directory: watch live occupancy of every room without joining any.
+    socket.on("lobby:join", () => {
+      socket.join(LOBBY_ROOM);
+      socket.emit("lobby:rooms", { rooms: lobbySnapshot() });
+    });
+    socket.on("lobby:leave", () => {
+      socket.leave(LOBBY_ROOM);
     });
 
     socket.on("chat:send", async ({ body }) => {
@@ -99,6 +111,7 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
       if (!roomId) return;
       removePresence(roomId, socket.id);
       io.to(roomId).emit("presence:update", { roomId, participants: listPresence(roomId) });
+      broadcastLobbyPresence(io, roomId);
       if (countPresence(roomId) === 0) roomTimer.stop(roomId);
     });
   });

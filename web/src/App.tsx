@@ -4,7 +4,7 @@ import Landing from './Landing'
 import Login from './pages/Auth/Login'
 import Signup from './pages/Auth/Signup'
 import Room from './pages/Room/Room'
-import Chat from './pages/Chat/Chat'
+import Lobby from './pages/Lobby/Lobby'
 
 export default function App() {
   return (
@@ -14,7 +14,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/room/:id" element={<Room />} />
-        <Route path="/chat" element={<Chat />} />
+        <Route path="/lobby" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   )

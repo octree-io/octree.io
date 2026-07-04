@@ -18,7 +18,7 @@ import type {
   RealtimeServer,
 } from "./types.js";
 
-const MAX_BODY = 2000;
+const MAX_BODY = 4000;
 
 // Attach a Socket.IO server to the existing HTTP server. Anonymous clients join
 // a room (a practice-room UUID or a Chat channel slug), chat is broadcast +dur-

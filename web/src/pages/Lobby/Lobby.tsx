@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BrandLink } from '../../components/Logo'
-import { SendIcon, LeaveIcon } from '../../components/Icons'
+import { SendIcon, LeaveIcon, ChevronIcon, SettingsIcon } from '../../components/Icons'
 import { useAuth } from '../../lib/AuthContext'
 import {
   useRoom, initials, LOBBY_PREFIX,
@@ -53,6 +53,8 @@ export default function Lobby() {
   const navigate = useNavigate()
   const [channelId, setChannelId] = useState(CHANNELS[0].id)
   const [draft, setDraft] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const footRef = useRef<HTMLElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
   async function handleLogout() {
@@ -66,6 +68,16 @@ export default function Lobby() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, channelId])
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (menuOpen && footRef.current && !footRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [menuOpen])
 
   function send() {
     const text = draft.trim()
@@ -98,20 +110,37 @@ export default function Lobby() {
             ))}
           </ul>
         </div>
-        <footer className="slack-side-foot">
+        <footer className="slack-side-foot" ref={footRef}>
           {you ? (
             <>
               <div className="member-avatar-wrap">
                 <Avatar person={you} size={32} />
                 <span className={`member-dot${connected ? '' : ' off'}`} />
               </div>
-              <div className="foot-id">
-                <span className="foot-name">{you.name}</span>
-                <span className="foot-status">{connected ? 'active' : 'offline'}</span>
-              </div>
-              <button className="foot-logout" onClick={handleLogout} title="Log out" aria-label="Log out">
-                <LeaveIcon />
+              <button
+                className="foot-id-wrap"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-haspopup="true"
+                aria-expanded={menuOpen}
+              >
+                <div className="foot-id">
+                  <span className="foot-name">{you.name}</span>
+                  <span className="foot-status">{connected ? 'active' : 'offline'}</span>
+                </div>
+                <ChevronIcon open={menuOpen} />
               </button>
+              {menuOpen && (
+                <div className="foot-dropdown">
+                  <button className="foot-dropdown-item" onClick={() => setMenuOpen(false)}>
+                    <SettingsIcon />
+                    <span>Settings</span>
+                  </button>
+                  <button className="foot-dropdown-item foot-dropdown-logout" onClick={() => { setMenuOpen(false); handleLogout() }}>
+                    <LeaveIcon />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <span className="foot-connecting">Connecting…</span>

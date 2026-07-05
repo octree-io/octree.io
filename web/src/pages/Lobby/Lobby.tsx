@@ -72,6 +72,8 @@ export default function Lobby() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef(channelId)
   const prevFirstIdRef = useRef<number | null>(null)
+  // True until the first batch of messages for a channel has been scrolled to.
+  const initialScrollRef = useRef(true)
   // Set when we deliberately request an older page, so the layout effect can
   // tell a scroll-back prepend from a normal incoming message.
   const anchorRef = useRef<{ height: number; top: number } | null>(null)
@@ -102,7 +104,10 @@ export default function Lobby() {
     if (!el) return
     const firstId = messages[0]?.id ?? null
     const channelChanged = channelRef.current !== channelId
-    channelRef.current = channelId
+    if (channelChanged) {
+      channelRef.current = channelId
+      initialScrollRef.current = true
+    }
 
     const prepended =
       !channelChanged &&
@@ -120,7 +125,17 @@ export default function Lobby() {
     }
 
     anchorRef.current = null
-    endRef.current?.scrollIntoView({ behavior: channelChanged ? 'auto' : 'smooth' })
+    if (messages.length === 0) return
+
+    if (initialScrollRef.current) {
+      // First fill for this channel — jump straight to the bottom. Instant (not
+      // smooth) so a follow-up render can't cut the animation off partway, which
+      // left the view stranded mid-history on refresh.
+      initialScrollRef.current = false
+      el.scrollTop = el.scrollHeight
+    } else {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }
   }, [messages, channelId])
 
   useEffect(() => {

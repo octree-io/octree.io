@@ -104,6 +104,12 @@ export function refreshSocketIdentity(): void {
 // `hasMore` — a full first page means older messages may exist to page back to.
 export const HISTORY_PAGE = 50
 
+// Cap on how many messages we keep mounted in the DOM at once. A long session
+// (thousands of messages) would otherwise render every node and bog the tab
+// down. When live messages push past this, we drop the oldest from the DOM —
+// they stay in the DB and remain reachable by scrolling back up.
+export const MAX_RENDERED = 300
+
 export interface UseRoom {
   connected: boolean
   you: Identity | null
@@ -176,8 +182,16 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       // A full first page implies there may be older messages to page back to.
       setHasMore(state.messages.length >= HISTORY_PAGE)
     }
+    const persistent = roomId.startsWith(LOBBY_PREFIX)
     const onMessage = (m: ChatMessage) => {
-      if (m.roomId === roomId) setMessages((prev) => [...prev, m])
+      if (m.roomId !== roomId) return
+      setMessages((prev) =>
+        prev.length >= MAX_RENDERED ? [...prev.slice(prev.length - MAX_RENDERED + 1), m] : [...prev, m],
+      )
+      // If this pushes us past the cap we're dropping the oldest from view; for
+      // persistent channels those rows live in the DB, so older history can be
+      // paged back to. (messagesRef holds the last committed length.)
+      if (persistent && messagesRef.current.length + 1 > MAX_RENDERED) setHasMore(true)
     }
     const onPresence = (p: { roomId: string; participants: Identity[] }) => {
       if (p.roomId === roomId) setParticipants(p.participants)

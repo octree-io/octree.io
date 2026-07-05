@@ -7,11 +7,24 @@ import { ApiError } from "../middleware/error.js";
 
 export const problemsRouter = Router();
 
+// Columns safe to expose to clients — never the reference `solution`.
+const PUBLIC_COLUMNS = {
+  id: true,
+  slug: true,
+  title: true,
+  description: true,
+  difficulty: true,
+  tags: true,
+  isPublished: true,
+  createdAt: true,
+} as const;
+
 // GET /problems
 problemsRouter.get("/", async (_req, res, next) => {
   try {
     const rows = await db.query.problems.findMany({
       where: eq(problems.isPublished, true),
+      columns: PUBLIC_COLUMNS,
       orderBy: (p, { asc }) => [asc(p.difficulty), asc(p.title)],
     });
     res.json(rows);
@@ -20,11 +33,12 @@ problemsRouter.get("/", async (_req, res, next) => {
   }
 });
 
-// GET /problems/:slug
+// GET /problems/:slug — problem name + description (no solution).
 problemsRouter.get("/:slug", async (req, res, next) => {
   try {
     const problem = await db.query.problems.findFirst({
       where: eq(problems.slug, req.params.slug),
+      columns: PUBLIC_COLUMNS,
     });
     if (!problem) throw new ApiError(404, "Problem not found");
     res.json(problem);

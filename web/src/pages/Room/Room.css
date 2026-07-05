@@ -171,6 +171,59 @@
   border-radius: 4px;
 }
 
+/* ── imported HTML problem descriptions ── */
+.problem-html { word-break: break-word; }
+.problem-html strong, .problem-html b { color: var(--text); font-weight: 650; }
+.problem-html em, .problem-html i { font-style: italic; }
+.problem-html u { text-decoration: underline; }
+.problem-html a { color: var(--purple); text-decoration: underline; }
+.problem-html sup, .problem-html sub { font-size: 0.72em; line-height: 0; }
+.problem-html ul, .problem-html ol {
+  padding-left: 20px;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.problem-html ul { list-style: disc; }
+.problem-html ol { list-style: decimal; }
+.problem-html li { margin: 0; }
+.problem-html pre {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--text);
+}
+.problem-html blockquote {
+  margin: 10px 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+.problem-html img { max-width: 100%; height: auto; border-radius: 6px; }
+.problem-html table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.8rem;
+  display: block;
+  overflow-x: auto;
+}
+.problem-html th, .problem-html td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+.problem-html th { background: var(--surface2); color: var(--text); font-weight: 600; }
+.problem-html hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
 .problem-section {
   font-size: 0.75rem;
   font-weight: 600;

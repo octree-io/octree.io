@@ -7,6 +7,7 @@ import {
   CheckIcon, XIcon, LockIcon,
 } from '../../components/Icons'
 import { useRoom, initials as toInitials } from '../../lib/socket'
+import { fetchProblem, type ProblemDetail } from '../../lib/problems'
 import './Room.css'
 
 /* ---------- types ---------- */
@@ -355,6 +356,20 @@ export default function Room() {
   const navigate = useNavigate()
   const chatEndRef = useRef<HTMLDivElement>(null)
 
+  // Pull the problem's name + description from the API (keyed by the slug the
+  // round assigns over the socket). Kept separate from the socket payload so the
+  // full HTML description is fetched on demand.
+  const [problemDetail, setProblemDetail] = useState<ProblemDetail | null>(null)
+  useEffect(() => {
+    const slug = liveProblem?.slug
+    if (!slug) { setProblemDetail(null); return }
+    let alive = true
+    fetchProblem(slug)
+      .then((d) => { if (alive) setProblemDetail(d) })
+      .catch(() => { if (alive) setProblemDetail(null) })
+    return () => { alive = false }
+  }, [liveProblem?.slug])
+
   // The room was closed (host action, or auto-closed when empty) — leave.
   useEffect(() => {
     if (closed) navigate('/lobby', { replace: true })
@@ -565,16 +580,16 @@ export default function Room() {
           {liveProblem ? (
             <>
               <div className="problem-header">
-                <h2 className="problem-title">{liveProblem.title}</h2>
+                <h2 className="problem-title">{problemDetail?.title ?? liveProblem.title}</h2>
                 <span className={`chip ${difficultyChip}`}>
                   {liveProblem.difficulty[0].toUpperCase() + liveProblem.difficulty.slice(1)}
                 </span>
               </div>
-              <div className="problem-content">
-                {liveProblem.description.split(/\n{2,}/).map((para, i) => (
-                  <p key={i}>{para}</p>
-                ))}
-              </div>
+              {/* Imported descriptions are HTML — render them as markup. */}
+              <div
+                className="problem-content problem-html"
+                dangerouslySetInnerHTML={{ __html: problemDetail?.description ?? liveProblem.description }}
+              />
             </>
           ) : (
           <>

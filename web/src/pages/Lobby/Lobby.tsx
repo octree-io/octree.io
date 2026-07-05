@@ -7,16 +7,8 @@ import {
   useRoom, initials, LOBBY_PREFIX,
   type Identity, type ChatMessage,
 } from '../../lib/socket'
+import { fetchChannels, type Channel } from '../../lib/channels'
 import './Lobby.css'
-
-/* ---------- channels (single workspace) ---------- */
-
-const CHANNELS = [
-  { id: 'general', name: 'general', topic: 'Company-wide chatter' },
-  { id: 'help', name: 'help', topic: 'Stuck? Ask here' },
-  { id: 'random', name: 'random', topic: 'Off-topic & memes' },
-  { id: 'announcements', name: 'announcements', topic: 'What’s new' },
-]
 
 /* ---------- bits ---------- */
 
@@ -64,7 +56,8 @@ function sameGroup(prev: ChatMessage | undefined, m: ChatMessage): boolean {
 export default function Lobby() {
   const { logout } = useAuth()
   const navigate = useNavigate()
-  const [channelId, setChannelId] = useState(CHANNELS[0].id)
+  const [channels, setChannels] = useState<Channel[]>([])
+  const [channelId, setChannelId] = useState('')
   const [draft, setDraft] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const footRef = useRef<HTMLElement>(null)
@@ -83,9 +76,23 @@ export default function Lobby() {
     navigate('/login', { replace: true })
   }
 
-  const channel = CHANNELS.find((c) => c.id === channelId) ?? CHANNELS[0]
+  // Channels are the server's source of truth — fetch them, don't hardcode.
+  // Default the selection to the first channel once the list arrives.
+  useEffect(() => {
+    let alive = true
+    fetchChannels()
+      .then((list) => {
+        if (!alive) return
+        setChannels(list)
+        setChannelId((cur) => cur || list[0]?.id || '')
+      })
+      .catch(() => { /* leave the list empty; the UI shows a loading state */ })
+    return () => { alive = false }
+  }, [])
+
+  const channel = channels.find((c) => c.id === channelId)
   const { messages, participants, you, connected, sendMessage, loadOlder, hasMore, loadingOlder } =
-    useRoom(LOBBY_PREFIX + channelId)
+    useRoom(channelId ? LOBBY_PREFIX + channelId : undefined)
 
   // Near the top → pull the next older page, remembering the scroll anchor.
   function handleScroll() {
@@ -166,7 +173,7 @@ export default function Lobby() {
         <div className="slack-side-scroll">
           <div className="side-group-label">Channels</div>
           <ul className="channel-list">
-            {CHANNELS.map((c) => (
+            {channels.map((c) => (
               <li key={c.id}>
                 <button
                   className={`channel${c.id === channelId ? ' channel-active' : ''}`}
@@ -222,9 +229,9 @@ export default function Lobby() {
         <header className="slack-main-head">
           <div className="slack-main-title">
             <HashIcon size={17} />
-            <span className="channel-title">{channel.name}</span>
+            <span className="channel-title">{channel?.name ?? '…'}</span>
           </div>
-          <span className="channel-topic">{channel.topic}</span>
+          <span className="channel-topic">{channel?.topic}</span>
         </header>
 
         <div className="slack-messages" ref={scrollRef} onScroll={handleScroll}>
@@ -232,7 +239,7 @@ export default function Lobby() {
             <div className="slack-history-status">Loading earlier messages…</div>
           )}
 
-          {!hasMore && (
+          {!hasMore && channel && (
             <div className="channel-intro">
               <div className="channel-intro-glyph"><HashIcon size={26} /></div>
               <h2>#{channel.name}</h2>
@@ -272,11 +279,12 @@ export default function Lobby() {
           <form className="slack-composer" onSubmit={(e) => { e.preventDefault(); send() }}>
             <input
               className="slack-composer-input"
-              placeholder={`Message #${channel.name}`}
+              placeholder={channel ? `Message #${channel.name}` : 'Loading channels…'}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              disabled={!channel}
             />
-            <button type="submit" className="slack-send" aria-label="Send" disabled={!draft.trim()}>
+            <button type="submit" className="slack-send" aria-label="Send" disabled={!draft.trim() || !channel}>
               <SendIcon />
             </button>
           </form>

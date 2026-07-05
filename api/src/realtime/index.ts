@@ -11,8 +11,10 @@ import {
   saveMessage,
   makeEphemeralMessage,
   isPersistentRoom,
+  LOBBY_PREFIX,
   HISTORY_PAGE,
 } from "./messages.js";
+import { isChannelId } from "../lib/channels.js";
 import * as roomTimer from "./roomTimer.js";
 import type {
   ClientToServerEvents,
@@ -22,6 +24,13 @@ import type {
 } from "./types.js";
 
 const MAX_BODY = 4000;
+
+// A lobby room id (`${LOBBY_PREFIX}${channelId}`) is only valid when its channel
+// exists in the server-side source of truth. Non-lobby rooms (practice-room
+// UUIDs) aren't channels and are left untouched here.
+function isUnknownChannel(roomId: string): boolean {
+  return isPersistentRoom(roomId) && !isChannelId(roomId.slice(LOBBY_PREFIX.length));
+}
 
 // Attach a Socket.IO server to the existing HTTP server. Anonymous clients join
 // a room (a practice-room UUID or a Chat channel slug), chat is broadcast +dur-
@@ -55,6 +64,12 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
       if (!roomId || typeof roomId !== "string") return;
       const authedUser = socket.data.user;
       if (!authedUser) return;
+
+      // Reject joins to lobby channels that aren't in the server's channel list.
+      if (isUnknownChannel(roomId)) {
+        socket.emit("error:msg", { message: "Channel not found" });
+        return;
+      }
 
       // A socket only occupies one room at a time; leave any previous one.
       const prev = socket.data.roomId;
@@ -127,6 +142,13 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
     socket.on("chat:send", async ({ body }) => {
       const { roomId, identity } = socket.data;
       if (!roomId || !identity) return;
+
+      // Never accept a message bound for a channel that isn't in the source of
+      // truth (defence-in-depth: join is already gated the same way).
+      if (isUnknownChannel(roomId)) {
+        socket.emit("error:msg", { message: "Channel not found" });
+        return;
+      }
 
       const text = (body ?? "").trim();
       if (!text) return;

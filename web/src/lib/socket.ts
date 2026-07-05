@@ -27,8 +27,11 @@ export interface Problem {
   description: string
 }
 
+export type RoomPhase = 'solving' | 'review'
+
 export interface Round {
   number: number
+  phase: RoomPhase
   endsAt: string | null
 }
 
@@ -40,6 +43,7 @@ export interface LobbyRoomPresence {
 interface RoomState {
   roomId: string
   you: Identity
+  youAreHost: boolean
   participants: Identity[]
   messages: ChatMessage[]
   problem: Problem | null
@@ -50,9 +54,10 @@ interface ServerToClientEvents {
   'room:state': (p: RoomState) => void
   'chat:message': (p: ChatMessage) => void
   'presence:update': (p: { roomId: string; participants: Identity[] }) => void
-  'room:problem': (p: { roomId: string; problem: Problem; round: Round }) => void
+  'room:problem': (p: { roomId: string; problem: Problem | null; round: Round }) => void
   'lobby:rooms': (p: { rooms: LobbyRoomPresence[] }) => void
   'lobby:presence': (p: LobbyRoomPresence) => void
+  'room:closed': (p: { roomId: string }) => void
   'error:msg': (p: { message: string }) => void
 }
 
@@ -64,6 +69,7 @@ interface HistoryResult {
 interface ClientToServerEvents {
   'room:join': (p: { roomId: string; name?: string }) => void
   'chat:send': (p: { body: string }) => void
+  'room:close': () => void
   'chat:history': (p: { before: number; limit?: number }, cb: (res: HistoryResult) => void) => void
   'lobby:join': () => void
   'lobby:leave': () => void
@@ -118,6 +124,12 @@ export interface UseRoom {
   problem: Problem | null
   round: Round | null
   sendMessage: (body: string) => void
+  /** Whether the signed-in user hosts this room (may close it). */
+  youAreHost: boolean
+  /** Ask the server to close this room (host only). */
+  closeRoom: () => void
+  /** True once the room has been closed (by the host or auto-closed). */
+  closed: boolean
   /** Load the next older page of messages (scroll-back pagination). */
   loadOlder: () => void
   /** Whether older messages remain to be loaded. */
@@ -145,6 +157,8 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [problem, setProblem] = useState<Problem | null>(null)
   const [round, setRound] = useState<Round | null>(null)
+  const [youAreHost, setYouAreHost] = useState(false)
+  const [closed, setClosed] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [loadingOlder, setLoadingOlder] = useState(false)
 
@@ -164,6 +178,8 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     setParticipants([])
     setProblem(null)
     setRound(null)
+    setYouAreHost(false)
+    setClosed(false)
     setHasMore(false)
     setLoadingOlder(false)
     loadingRef.current = false
@@ -175,12 +191,16 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     const onState = (state: RoomState) => {
       if (state.roomId !== roomId) return
       setYou(state.you)
+      setYouAreHost(state.youAreHost)
       setParticipants(state.participants)
       setMessages(state.messages)
       setProblem(state.problem)
       setRound(state.round)
       // A full first page implies there may be older messages to page back to.
       setHasMore(state.messages.length >= HISTORY_PAGE)
+    }
+    const onClosed = (p: { roomId: string }) => {
+      if (p.roomId === roomId) setClosed(true)
     }
     const persistent = roomId.startsWith(LOBBY_PREFIX)
     const onMessage = (m: ChatMessage) => {
@@ -208,6 +228,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     s.on('chat:message', onMessage)
     s.on('presence:update', onPresence)
     s.on('room:problem', onProblem)
+    s.on('room:closed', onClosed)
     s.on('disconnect', onDisconnect)
 
     if (s.connected) join()
@@ -218,6 +239,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       s.off('chat:message', onMessage)
       s.off('presence:update', onPresence)
       s.off('room:problem', onProblem)
+      s.off('room:closed', onClosed)
       s.off('disconnect', onDisconnect)
     }
   }, [roomId, name])
@@ -225,6 +247,10 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   const sendMessage = useCallback((body: string) => {
     const text = body.trim()
     if (text) getSocket().emit('chat:send', { body: text })
+  }, [])
+
+  const closeRoom = useCallback(() => {
+    getSocket().emit('room:close')
   }, [])
 
   const loadOlder = useCallback(() => {
@@ -251,7 +277,10 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     })
   }, [])
 
-  return { connected, you, participants, messages, problem, round, sendMessage, loadOlder, hasMore, loadingOlder }
+  return {
+    connected, you, participants, messages, problem, round,
+    sendMessage, youAreHost, closeRoom, closed, loadOlder, hasMore, loadingOlder,
+  }
 }
 
 /* ---------- useLobbyPresence hook ---------- */

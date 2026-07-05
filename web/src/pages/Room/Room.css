@@ -34,6 +34,23 @@
   text-overflow: ellipsis;
 }
 
+.room-timer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.room-phase {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.room-phase-solving { color: var(--purple); background: rgba(167,139,250,0.12); }
+.room-phase-review  { color: #5c8fd6;       background: rgba(92,143,214,0.14); }
+
 .room-timer {
   font-family: var(--mono);
   font-size: 0.95rem;
@@ -69,6 +86,24 @@
 }
 .btn-leave:hover { color: var(--red); border-color: var(--red); background: rgba(239,68,68,0.06); }
 .btn-leave svg { stroke: currentColor; }
+
+.btn-close-room {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #f0788c;
+  border: 1px solid rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.08);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.btn-close-room:hover { color: #fff; border-color: var(--red); background: var(--red); }
+.btn-close-room svg { stroke: currentColor; }
 
 /* ---------- body ---------- */
 .room-body {

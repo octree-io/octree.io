@@ -17,6 +17,9 @@ export const roomStatusEnum = pgEnum("room_status", [
   "active",
   "finished",
 ]);
+// Within an active round a room alternates between solving the problem and a
+// fixed review window where solutions are revealed.
+export const roomPhaseEnum = pgEnum("room_phase", ["solving", "review"]);
 export const submissionStatusEnum = pgEnum("submission_status", [
   "queued", // accepted by the API, waiting for a worker
   "processing", // a worker is executing it on Judge0
@@ -93,10 +96,14 @@ export const rooms = pgTable("rooms", {
   startedAt: timestamp("started_at"),
   finishedAt: timestamp("finished_at"),
   // Realtime round bookkeeping — the socket server rotates the room's problem
-  // every round and records when the current round ends so late joiners can
-  // sync their countdown.
+  // every round and records when the current phase ends so late joiners can
+  // sync their countdown. `phase` says whether players are solving or reviewing;
+  // `usedProblemIds` tracks which problems this room has already served so it
+  // doesn't repeat one until the pool is exhausted (then it resets).
   roundNumber: integer("round_number").notNull().default(1),
+  phase: roomPhaseEnum("phase").notNull().default("solving"),
   roundEndsAt: timestamp("round_ends_at"),
+  usedProblemIds: integer("used_problem_ids").array().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

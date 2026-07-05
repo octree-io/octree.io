@@ -3,7 +3,7 @@ import { Server } from "socket.io";
 import { env } from "../config.js";
 import { identityForUser } from "./identity.js";
 import { userFromCookieHeader } from "../auth/middleware.js";
-import { addPresence, removePresence, listPresence, countPresence } from "./presence.js";
+import { addPresence, removePresence, listPresence } from "./presence.js";
 import { LOBBY_ROOM, lobbySnapshot, broadcastLobbyPresence } from "./lobby.js";
 import {
   loadRecentMessages,
@@ -71,14 +71,15 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
         return;
       }
 
-      // A socket only occupies one room at a time; leave any previous one.
+      // A socket only occupies one room at a time; leave any previous one. The
+      // vacated room keeps its timer running so it can auto-close at the next
+      // round boundary if it's now empty (see roomTimer.advance).
       const prev = socket.data.roomId;
       if (prev && prev !== roomId) {
         removePresence(prev, socket.id);
         socket.leave(prev);
         io.to(prev).emit("presence:update", { roomId: prev, participants: listPresence(prev) });
         broadcastLobbyPresence(io, prev);
-        if (countPresence(prev) === 0) roomTimer.stop(prev);
       }
 
       // Identity comes from the authenticated user, never client-supplied
@@ -96,9 +97,19 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
           roomTimer.startOrResume(io, roomId),
         ]);
 
+        // The room was already closed — bounce this socket back out.
+        if (roundState?.closed) {
+          removePresence(roomId, socket.id);
+          socket.leave(roomId);
+          socket.data.roomId = undefined;
+          socket.emit("room:closed", { roomId });
+          return;
+        }
+
         socket.emit("room:state", {
           roomId,
           you: identity,
+          youAreHost: roundState?.hostId === authedUser.id,
           participants: listPresence(roomId),
           messages,
           problem: roundState?.problem ?? null,
@@ -111,6 +122,19 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
 
       io.to(roomId).emit("presence:update", { roomId, participants: listPresence(roomId) });
       broadcastLobbyPresence(io, roomId);
+    });
+
+    // Host-only: end the room and evict everyone in it.
+    socket.on("room:close", async () => {
+      const roomId = socket.data.roomId;
+      const user = socket.data.user;
+      if (!roomId || !user) return;
+      try {
+        const closed = await roomTimer.closeRoom(roomId, user.id);
+        if (closed) io.to(roomId).emit("room:closed", { roomId });
+      } catch (err) {
+        console.error("[realtime] room:close failed:", err);
+      }
     });
 
     // Lobby directory: watch live occupancy of every room without joining any.
@@ -169,10 +193,12 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
     socket.on("disconnect", () => {
       const roomId = socket.data.roomId;
       if (!roomId) return;
+      // Leave presence but keep the room's timer running — an empty room closes
+      // itself at the next round boundary, which also survives brief drops (e.g.
+      // a page refresh) without tearing the room down prematurely.
       removePresence(roomId, socket.id);
       io.to(roomId).emit("presence:update", { roomId, participants: listPresence(roomId) });
       broadcastLobbyPresence(io, roomId);
-      if (countPresence(roomId) === 0) roomTimer.stop(roomId);
     });
   });
 

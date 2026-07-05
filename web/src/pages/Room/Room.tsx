@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
 import {
@@ -347,9 +347,24 @@ export default function Room() {
     round,
     connected,
     sendMessage: sendChat,
+    youAreHost,
+    closeRoom,
+    closed,
   } = useRoom(roomId)
 
+  const navigate = useNavigate()
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // The room was closed (host action, or auto-closed when empty) — leave.
+  useEffect(() => {
+    if (closed) navigate('/lobby', { replace: true })
+  }, [closed, navigate])
+
+  function handleCloseRoom() {
+    if (window.confirm('Close this room for everyone? This ends the session.')) {
+      closeRoom()
+    }
+  }
 
   /* resize — global listeners added once */
   useEffect(() => {
@@ -506,6 +521,8 @@ export default function Room() {
     ? `chip-${liveProblem.difficulty}`
     : 'chip-easy'
 
+  const phase = round?.phase ?? 'solving'
+
   return (
     <div className="room">
 
@@ -516,9 +533,20 @@ export default function Room() {
           <span className="topbar-sep" aria-hidden="true" />
         </div>
 
-        <div className={`room-timer ${timerClass()}`}>{fmtTime(timeLeft)}</div>
+        <div className="room-timer-wrap">
+          <span className={`room-phase room-phase-${phase}`}>
+            {phase === 'review' ? 'Review' : 'Solving'}
+          </span>
+          <div className={`room-timer ${timerClass()}`}>{fmtTime(timeLeft)}</div>
+        </div>
 
         <div className="topbar-right">
+          {youAreHost && (
+            <button type="button" className="btn-close-room" onClick={handleCloseRoom}>
+              <XIcon />
+              Close room
+            </button>
+          )}
           <Link to="/" className="btn-leave">
             <LeaveIcon />
             Leave

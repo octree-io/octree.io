@@ -3,14 +3,32 @@ import { db } from "../db/index.js";
 import { rooms, problems } from "../db/schema.js";
 import { env } from "../config.js";
 import { resolveRoomId } from "../lib/roomSlug.js";
-import type { ProblemPayload, RoundPayload, RealtimeServer } from "./types.js";
+import { countPresence } from "./presence.js";
+import type { ProblemPayload, RoundPayload, RoomPhase, RealtimeServer } from "./types.js";
 
 type RoomRow = typeof rooms.$inferSelect;
 type ProblemRow = typeof problems.$inferSelect;
+type Difficulty = RoomRow["difficulty"];
 
 // One pending timeout per room. Guards against duplicate schedulers when
 // several people join the same room.
 const timers = new Map<string, NodeJS.Timeout>();
+
+// Solving time by difficulty, and a fixed review window after every round.
+// ROUND_SECONDS, when set, overrides both so the cycle is fast to observe.
+const SOLVE_SECONDS: Record<Difficulty, number> = {
+  easy: 15 * 60,
+  medium: 25 * 60,
+  hard: 45 * 60,
+};
+const REVIEW_SECONDS = 10 * 60;
+
+function solveSeconds(room: RoomRow): number {
+  return env.roundSeconds ?? SOLVE_SECONDS[room.difficulty];
+}
+function reviewSeconds(): number {
+  return env.roundSeconds ?? REVIEW_SECONDS;
+}
 
 function problemPayload(p: ProblemRow): ProblemPayload {
   return {
@@ -22,14 +40,13 @@ function problemPayload(p: ProblemRow): ProblemPayload {
   };
 }
 
-function roundLengthSeconds(room: RoomRow): number {
-  return env.roundSeconds ?? room.durationMinutes * 60;
+function roundPayload(number: number, phase: RoomPhase, endsAt: number): RoundPayload {
+  return { number, phase, endsAt: new Date(endsAt).toISOString() };
 }
 
 // Practice rooms are addressed either by a numeric id or a word slug
 // (noise-tortoise-sun), both of which resolve to the numeric primary key. The
-// standalone Chat channels ("general", "lobby:general", …) resolve to null, so
-// we skip the DB work for them.
+// standalone Chat channels ("general", "lobby:general", …) resolve to null.
 function toRoomId(roomId: string): number | null {
   return resolveRoomId(roomId);
 }
@@ -37,123 +54,215 @@ function toRoomId(roomId: string): number | null {
 async function loadRoom(roomId: string): Promise<RoomRow | null> {
   const id = toRoomId(roomId);
   if (id === null) return null;
-  const room = await db.query.rooms.findFirst({ where: eq(rooms.id, id) });
-  return room ?? null;
+  return (await db.query.rooms.findFirst({ where: eq(rooms.id, id) })) ?? null;
 }
 
 async function loadProblem(problemId: number): Promise<ProblemRow | null> {
-  const p = await db.query.problems.findFirst({ where: eq(problems.id, problemId) });
-  return p ?? null;
+  return (await db.query.problems.findFirst({ where: eq(problems.id, problemId) })) ?? null;
 }
 
-// Published problems of a given difficulty in a stable order; used to rotate to
-// the "next" one within the room's difficulty band.
-async function publishedProblems(difficulty: RoomRow["difficulty"]): Promise<ProblemRow[]> {
+// Published problems of the room's difficulty, in a stable order.
+async function difficultyPool(difficulty: Difficulty): Promise<ProblemRow[]> {
   return db.query.problems.findMany({
     where: and(eq(problems.isPublished, true), eq(problems.difficulty, difficulty)),
     orderBy: (p, { asc }) => [asc(p.createdAt)],
   });
 }
 
-// The room's current problem, assigning (and persisting) a difficulty-matched
-// one on demand when the room doesn't have a problem yet.
-async function currentProblemFor(room: RoomRow): Promise<ProblemRow | null> {
-  if (room.problemId !== null) return loadProblem(room.problemId);
-  const first = (await publishedProblems(room.difficulty))[0] ?? null;
-  if (first) {
-    await db.update(rooms).set({ problemId: first.id }).where(eq(rooms.id, room.id));
+/**
+ * Pick the next problem for a room: a random one that hasn't been served yet
+ * this cycle. When every problem has been used, reset the cycle and start over
+ * (avoiding an immediate repeat of the current problem when possible). Returns
+ * the chosen problem and the updated "used" list, or null when the pool is empty.
+ */
+function chooseNext(
+  pool: ProblemRow[],
+  used: number[],
+  currentId: number | null,
+): { problem: ProblemRow; used: number[] } | null {
+  if (pool.length === 0) return null;
+
+  let remaining = pool.filter((p) => !used.includes(p.id));
+  let baseUsed = used;
+  if (remaining.length === 0) {
+    // Exhausted every problem → reset the cycle and start over.
+    baseUsed = [];
+    remaining =
+      pool.length > 1 && currentId !== null ? pool.filter((p) => p.id !== currentId) : pool;
   }
-  return first;
+
+  const problem = remaining[Math.floor(Math.random() * remaining.length)];
+  return { problem, used: [...baseUsed, problem.id] };
+}
+
+function withId(used: number[], id: number | null | undefined): number[] {
+  if (id == null || used.includes(id)) return used;
+  return [...used, id];
 }
 
 /**
- * Ensure a round is running for a DB-backed room and (re)arm the switch timer.
+ * Ensure a round is running for a DB-backed room and (re)arm its phase timer.
  * Returns the current problem + round for the joining client, or null when the
  * roomId isn't a real practice room (e.g. a Chat channel).
  */
 export async function startOrResume(
   io: RealtimeServer,
-  roomId: string,
-): Promise<{ problem: ProblemPayload | null; round: RoundPayload } | null> {
-  const room = await loadRoom(roomId);
+  roomKey: string,
+): Promise<{
+  problem: ProblemPayload | null;
+  round: RoundPayload | null;
+  hostId: number | null;
+  closed: boolean;
+} | null> {
+  const room = await loadRoom(roomKey);
   if (!room) return null;
 
-  const now = Date.now();
-  const lenMs = roundLengthSeconds(room) * 1000;
-  let endsAt = room.roundEndsAt?.getTime() ?? 0;
-  const roundNumber = room.roundNumber;
-
-  // No live round (never started, or the deadline lapsed while the room was
-  // empty) → begin a fresh one from the room's current problem.
-  if (!room.roundEndsAt || endsAt <= now || room.status !== "active") {
-    endsAt = now + lenMs;
-    await db
-      .update(rooms)
-      .set({
-        status: "active",
-        startedAt: room.startedAt ?? new Date(),
-        roundEndsAt: new Date(endsAt),
-      })
-      .where(eq(rooms.id, room.id));
+  // A closed room stays closed — never resurrect a finished session on join.
+  if (room.status === "finished") {
+    return { problem: null, round: null, hostId: room.hostId, closed: true };
   }
 
-  arm(io, roomId, endsAt - now);
+  const now = Date.now();
+  const endsAt = room.roundEndsAt?.getTime() ?? 0;
 
-  const problem = await currentProblemFor(room);
+  // A live phase is already in flight → just resume it for the joiner.
+  if (room.status === "active" && room.roundEndsAt && endsAt > now) {
+    arm(io, roomKey, endsAt - now);
+    const problem = room.problemId !== null ? await loadProblem(room.problemId) : null;
+    return {
+      problem: problem ? problemPayload(problem) : null,
+      round: roundPayload(room.roundNumber, room.phase, endsAt),
+      hostId: room.hostId,
+      closed: false,
+    };
+  }
+
+  // Otherwise (never started, or the deadline lapsed while the room sat empty)
+  // begin a fresh solving phase on the room's current problem — don't burn a new
+  // problem just because nobody was here; the timer rotates problems, not joins.
+  let problem = room.problemId !== null ? await loadProblem(room.problemId) : null;
+  let used = room.usedProblemIds;
+  if (!problem) {
+    const chosen = chooseNext(await difficultyPool(room.difficulty), room.usedProblemIds, null);
+    problem = chosen?.problem ?? null;
+    used = chosen?.used ?? room.usedProblemIds;
+  } else {
+    used = withId(room.usedProblemIds, problem.id);
+  }
+
+  const phaseEndsAt = now + solveSeconds(room) * 1000;
+  await db
+    .update(rooms)
+    .set({
+      status: "active",
+      phase: "solving",
+      problemId: problem?.id ?? null,
+      usedProblemIds: used,
+      startedAt: room.startedAt ?? new Date(),
+      roundEndsAt: new Date(phaseEndsAt),
+    })
+    .where(eq(rooms.id, room.id));
+
+  arm(io, roomKey, phaseEndsAt - now);
   return {
     problem: problem ? problemPayload(problem) : null,
-    round: { number: roundNumber, endsAt: new Date(endsAt).toISOString() },
+    round: roundPayload(room.roundNumber, "solving", phaseEndsAt),
+    hostId: room.hostId,
+    closed: false,
   };
 }
 
-function arm(io: RealtimeServer, roomId: string, delayMs: number): void {
-  if (timers.has(roomId)) return; // already scheduled
+function arm(io: RealtimeServer, roomKey: string, delayMs: number): void {
+  if (timers.has(roomKey)) return; // already scheduled
   const timeout = setTimeout(() => {
-    timers.delete(roomId);
-    void rotate(io, roomId);
+    timers.delete(roomKey);
+    void advance(io, roomKey);
   }, Math.max(0, delayMs));
-  timers.set(roomId, timeout);
+  timers.set(roomKey, timeout);
 }
 
-// Advance the room to the next published problem, persist it, broadcast, and
-// re-arm for the following round.
-async function rotate(io: RealtimeServer, roomId: string): Promise<void> {
-  const room = await loadRoom(roomId);
+/**
+ * Fired when the current phase's timer elapses. Solving → a 10-minute review
+ * window on the same problem; review → the next round on a fresh problem.
+ */
+async function advance(io: RealtimeServer, roomKey: string): Promise<void> {
+  const room = await loadRoom(roomKey);
   if (!room) return;
 
-  const all = await publishedProblems(room.difficulty);
-  if (all.length === 0) return;
+  // The room emptied out during the phase — close it at the boundary rather
+  // than rotating to a new problem nobody is there to solve.
+  if (countPresence(roomKey) === 0) {
+    await finishRoom(room.id);
+    stop(roomKey);
+    return;
+  }
 
-  const idx = all.findIndex((p) => p.id === room.problemId);
-  const next = all[(idx + 1) % all.length];
+  if (room.phase === "solving") {
+    // Move into the review window; keep the same problem, reveal solutions.
+    const endsAt = Date.now() + reviewSeconds() * 1000;
+    await db
+      .update(rooms)
+      .set({ phase: "review", roundEndsAt: new Date(endsAt) })
+      .where(eq(rooms.id, room.id));
 
-  const lenMs = roundLengthSeconds(room) * 1000;
-  const endsAt = Date.now() + lenMs;
+    const problem = room.problemId !== null ? await loadProblem(room.problemId) : null;
+    io.to(roomKey).emit("room:problem", {
+      roomId: roomKey,
+      problem: problem ? problemPayload(problem) : null,
+      round: roundPayload(room.roundNumber, "review", endsAt),
+    });
+    arm(io, roomKey, endsAt - Date.now());
+    return;
+  }
+
+  // Review finished → next round on a new problem.
+  const chosen = chooseNext(await difficultyPool(room.difficulty), room.usedProblemIds, room.problemId);
   const roundNumber = room.roundNumber + 1;
+  const endsAt = Date.now() + solveSeconds(room) * 1000;
 
   await db
     .update(rooms)
     .set({
-      problemId: next.id,
+      phase: "solving",
+      problemId: chosen?.problem.id ?? room.problemId,
+      usedProblemIds: chosen?.used ?? room.usedProblemIds,
       roundNumber,
       roundEndsAt: new Date(endsAt),
     })
     .where(eq(rooms.id, room.id));
 
-  io.to(roomId).emit("room:problem", {
-    roomId,
-    problem: problemPayload(next),
-    round: { number: roundNumber, endsAt: new Date(endsAt).toISOString() },
+  io.to(roomKey).emit("room:problem", {
+    roomId: roomKey,
+    problem: chosen ? problemPayload(chosen.problem) : null,
+    round: roundPayload(roundNumber, "solving", endsAt),
   });
-
-  arm(io, roomId, lenMs);
+  arm(io, roomKey, endsAt - Date.now());
 }
 
-// Called when a room empties out — stop burning a timer on nobody.
-export function stop(roomId: string): void {
-  const t = timers.get(roomId);
+// Cancel a room's pending phase timer, if any.
+export function stop(roomKey: string): void {
+  const t = timers.get(roomKey);
   if (t) {
     clearTimeout(t);
-    timers.delete(roomId);
+    timers.delete(roomKey);
   }
+}
+
+async function finishRoom(id: number): Promise<void> {
+  await db
+    .update(rooms)
+    .set({ status: "finished", finishedAt: new Date() })
+    .where(eq(rooms.id, id));
+}
+
+/**
+ * Host-initiated close. Verifies the requester actually hosts the room, marks
+ * it finished, and cancels its timer. Returns whether the room was closed.
+ */
+export async function closeRoom(roomKey: string, userId: number): Promise<boolean> {
+  const room = await loadRoom(roomKey);
+  if (!room || room.hostId !== userId) return false;
+  await finishRoom(room.id);
+  stop(roomKey);
+  return true;
 }

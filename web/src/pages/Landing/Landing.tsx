@@ -2,6 +2,7 @@ import './Landing.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { BrandLink } from '../../components/Logo'
 import { randomRoomSlug } from '../../lib/roomSlug'
+import { useAuth } from '../../lib/AuthContext'
 
 function Avatar({ initials, color, size = 30 }: { initials: string; color: string; size?: number }) {
   return (
@@ -133,6 +134,7 @@ const steps = [
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   // Spawn a fresh, shareable worded room (e.g. /room/noise-tortoise-sun).
   const enterRoom = () => navigate(`/room/${randomRoomSlug()}`)
 
@@ -150,8 +152,14 @@ export default function Landing() {
           <a href="#lobby">Lobby</a>
         </nav>
         <div className="nav-actions">
-          <Link className="link-muted" to="/login">Sign in</Link>
-          <Link className="btn-primary nav-cta" to="/signup">Get started</Link>
+          {user ? (
+            <Link className="btn-primary nav-cta" to="/lobby">Go to Lobby</Link>
+          ) : (
+            <>
+              <Link className="link-muted" to="/login">Sign in</Link>
+              <Link className="btn-primary nav-cta" to="/signup">Get started</Link>
+            </>
+          )}
         </div>
       </header>
 

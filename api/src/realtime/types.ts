@@ -26,9 +26,12 @@ export interface ProblemPayload {
   description: string;
 }
 
+export type RoomPhase = "solving" | "review";
+
 export interface RoundPayload {
   number: number;
-  endsAt: string | null; // ISO — when the current problem round ends
+  phase: RoomPhase; // solving the problem, or reviewing solutions
+  endsAt: string | null; // ISO — when the current phase ends
 }
 
 // Live occupancy of one practice room, as shown in the lobby's room cards.
@@ -40,6 +43,7 @@ export interface LobbyRoomPresence {
 export interface RoomStatePayload {
   roomId: string;
   you: Identity;
+  youAreHost: boolean;
   participants: Identity[];
   messages: ChatMessagePayload[];
   problem: ProblemPayload | null;
@@ -69,6 +73,8 @@ export interface HistoryResult {
 export interface ClientToServerEvents {
   "room:join": (p: JoinPayload) => void;
   "chat:send": (p: SendPayload) => void;
+  // Host-only: end the current room and evict everyone.
+  "room:close": () => void;
   // Load older messages (scroll-back pagination). Replies via ack callback.
   "chat:history": (p: HistoryPayload, cb: (res: HistoryResult) => void) => void;
   // Subscribe/unsubscribe to live occupancy of all rooms (the lobby directory).
@@ -82,12 +88,14 @@ export interface ServerToClientEvents {
   "presence:update": (p: { roomId: string; participants: Identity[] }) => void;
   "room:problem": (p: {
     roomId: string;
-    problem: ProblemPayload;
+    problem: ProblemPayload | null;
     round: RoundPayload;
   }) => void;
   // Lobby: full occupancy snapshot on subscribe, then per-room deltas.
   "lobby:rooms": (p: { rooms: LobbyRoomPresence[] }) => void;
   "lobby:presence": (p: LobbyRoomPresence) => void;
+  // The room was closed (by its host, or auto-closed when it emptied out).
+  "room:closed": (p: { roomId: string }) => void;
   "error:msg": (p: { message: string }) => void;
 }
 

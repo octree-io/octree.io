@@ -1,7 +1,7 @@
 import './Landing.css'
 import { Link, useNavigate } from 'react-router-dom'
-import { BrandLink } from './components/Logo'
-import { randomRoomSlug } from './lib/roomSlug'
+import { BrandLink } from '../../components/Logo'
+import { randomRoomSlug } from '../../lib/roomSlug'
 
 function Avatar({ initials, color, size = 30 }: { initials: string; color: string; size?: number }) {
   return (
@@ -160,8 +160,8 @@ export default function Landing() {
         <div className="hero-copy">
           <span className="eyebrow"><span className="eyebrow-dot" /> Interview prep, together</span>
           <h1>
-            Practice interviews<br />
-            in a room, <span className="grad">not alone.</span>
+            Code together,<br />
+            <span className="grad">grow together.</span>
           </h1>
           <p className="hero-sub">
             octree.io drops you into live rooms where you solve real interview

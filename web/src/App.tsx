@@ -1,6 +1,6 @@
 import './App.css'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Landing from './Landing'
+import Landing from './pages/Landing/Landing'
 import Login from './pages/Auth/Login'
 import Signup from './pages/Auth/Signup'
 import Room from './pages/Room/Room'

@@ -81,6 +81,8 @@ export interface ServerToClientEvents {
 export interface SocketData {
   identity?: Identity;
   roomId?: string;
+  // The authenticated user behind this socket (set by the handshake middleware).
+  user?: { id: number; username: string };
 }
 
 export type RealtimeServer = Server<

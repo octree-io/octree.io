@@ -5,6 +5,7 @@ import Login from './pages/Auth/Login'
 import Signup from './pages/Auth/Signup'
 import Room from './pages/Room/Room'
 import Lobby from './pages/Lobby/Lobby'
+import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
   return (
@@ -13,8 +14,12 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/room/:id" element={<Room />} />
-        <Route path="/lobby" element={<Lobby />} />
+
+        {/* auth-only */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/lobby" element={<Lobby />} />
+          <Route path="/room/:id" element={<Room />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

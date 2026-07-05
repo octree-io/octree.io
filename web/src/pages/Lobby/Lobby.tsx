@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { BrandLink } from '../../components/Logo'
-import { SendIcon } from '../../components/Icons'
+import { SendIcon, LeaveIcon } from '../../components/Icons'
+import { useAuth } from '../../lib/AuthContext'
 import {
   useRoom, initials, LOBBY_PREFIX,
   type Identity, type ChatMessage,
@@ -47,9 +49,16 @@ function fmtTime(iso: string) {
 /* ---------- main ---------- */
 
 export default function Lobby() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
   const [channelId, setChannelId] = useState(CHANNELS[0].id)
   const [draft, setDraft] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   const channel = CHANNELS.find((c) => c.id === channelId) ?? CHANNELS[0]
   const { messages, participants, you, connected, sendMessage } = useRoom(LOBBY_PREFIX + channelId)
@@ -100,6 +109,9 @@ export default function Lobby() {
                 <span className="foot-name">{you.name}</span>
                 <span className="foot-status">{connected ? 'active' : 'offline'}</span>
               </div>
+              <button className="foot-logout" onClick={handleLogout} title="Log out" aria-label="Log out">
+                <LeaveIcon />
+              </button>
             </>
           ) : (
             <span className="foot-connecting">Connecting…</span>
@@ -139,7 +151,7 @@ export default function Lobby() {
                   {!grouped && (
                     <div className="slack-msg-head">
                       <span className="slack-msg-author" style={{ color: m.authorColor }}>
-                        {you && m.authorId === you.id ? 'you' : m.authorName}
+                        {m.authorName}
                       </span>
                       <span className="slack-msg-ts">{ts}</span>
                     </div>
@@ -184,7 +196,7 @@ export default function Lobby() {
                 <Avatar person={p} size={28} />
                 <span className="member-dot" />
               </div>
-              <span className="member-name">{you && p.id === you.id ? 'you' : p.name}</span>
+              <span className="member-name">{p.name}</span>
             </li>
           ))}
         </ul>

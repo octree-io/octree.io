@@ -12,17 +12,23 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
     "bullmq": "^5.79.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.4",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
+    "google-auth-library": "^10.9.0",
+    "helmet": "^8.2.0",
     "ioredis": "^5.10.1",
     "postgres": "^3.4.5",
     "socket.io": "^4.8.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",

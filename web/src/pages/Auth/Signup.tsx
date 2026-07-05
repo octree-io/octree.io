@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from './AuthLayout'
 import { GoogleIcon, EyeIcon, AlertIcon } from '../../components/Icons'
+import { useAuth } from '../../lib/AuthContext'
+import { AuthError, googleAuthUrl } from '../../lib/auth'
 
 function passwordStrength(pw: string): 0 | 1 | 2 | 3 {
   if (!pw) return 0
@@ -24,6 +26,9 @@ interface Errors {
 }
 
 export default function Signup() {
+  const { register } = useAuth()
+  const navigate = useNavigate()
+
   const [username, setUsername] = useState('')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -59,19 +64,24 @@ export default function Signup() {
     setErrors({})
     setLoading(true)
     try {
-      // TODO: call auth API
-      await new Promise(r => setTimeout(r, 900))
-      // on success: navigate('/lobby')
-    } catch {
-      setErrors({ form: 'Something went wrong. Please try again.' })
+      await register({ username: username.trim(), email: email.trim(), password })
+      navigate('/lobby', { replace: true })
+    } catch (err) {
+      if (err instanceof AuthError && err.status === 409) {
+        // Duplicate email or username — surface on the most likely field.
+        const onEmail = /email/i.test(err.message)
+        setErrors(onEmail ? { email: err.message } : { username: err.message })
+      } else {
+        const msg = err instanceof AuthError ? err.message : 'Something went wrong. Please try again.'
+        setErrors({ form: msg })
+      }
     } finally {
       setLoading(false)
     }
   }
 
   function handleGoogle() {
-    // TODO: initiate OAuth flow
-    window.location.href = '/auth/google'
+    window.location.href = googleAuthUrl()
   }
 
   return (

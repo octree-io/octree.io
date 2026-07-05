@@ -73,7 +73,9 @@ let socket: AppSocket | null = null
 
 export function getSocket(): AppSocket {
   if (!socket) {
-    socket = io(API_URL, { transports: ['websocket', 'polling'] })
+    // withCredentials sends the session cookie so the server can authenticate
+    // the handshake (login is required to connect).
+    socket = io(API_URL, { transports: ['websocket', 'polling'], withCredentials: true })
   }
   return socket
 }

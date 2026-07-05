@@ -1,1 +1,11 @@
-/* intentionally empty — styles live in index.css and view-level css files */
+/* full-screen loading state while the session is being resolved */
+.route-loading {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f14;
+  color: #7b7b9a;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+}

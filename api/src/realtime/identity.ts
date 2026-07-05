@@ -39,3 +39,14 @@ export function makeIdentity(socketId: string, name?: string): Identity {
     color: COLORS[hash(socketId) % COLORS.length],
   };
 }
+
+// Stable realtime identity for an authenticated user. `id` is derived from the
+// user id (not the socket) so the same person across tabs collapses to one
+// identity in presence, and the colour stays consistent everywhere.
+export function identityForUser(user: { id: number; username: string }): Identity {
+  return {
+    id: `u${user.id}`,
+    name: user.username,
+    color: COLORS[user.id % COLORS.length],
+  };
+}

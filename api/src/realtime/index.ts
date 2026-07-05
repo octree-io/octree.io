@@ -1,7 +1,8 @@
 import type { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
 import { env } from "../config.js";
-import { makeIdentity } from "./identity.js";
+import { identityForUser } from "./identity.js";
+import { userFromCookieHeader } from "../auth/middleware.js";
 import { addPresence, removePresence, listPresence, countPresence } from "./presence.js";
 import { LOBBY_ROOM, lobbySnapshot, broadcastLobbyPresence } from "./lobby.js";
 import {
@@ -30,12 +31,28 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
     Record<string, never>,
     SocketData
   >(httpServer, {
-    cors: { origin: env.corsOrigin, methods: ["GET", "POST"] },
+    cors: { origin: env.webOrigin, methods: ["GET", "POST"], credentials: true },
+  });
+
+  // Authenticate every socket from its session cookie at handshake time. Login
+  // is required, so unauthenticated connections are rejected outright.
+  io.use(async (socket, next) => {
+    try {
+      const user = await userFromCookieHeader(socket.handshake.headers.cookie);
+      if (!user) return next(new Error("unauthorized"));
+      socket.data.user = { id: user.id, username: user.username };
+      next();
+    } catch (err) {
+      console.error("[realtime] handshake auth failed:", err);
+      next(new Error("unauthorized"));
+    }
   });
 
   io.on("connection", (socket) => {
-    socket.on("room:join", async ({ roomId, name }) => {
+    socket.on("room:join", async ({ roomId }) => {
       if (!roomId || typeof roomId !== "string") return;
+      const authedUser = socket.data.user;
+      if (!authedUser) return;
 
       // A socket only occupies one room at a time; leave any previous one.
       const prev = socket.data.roomId;
@@ -47,7 +64,9 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
         if (countPresence(prev) === 0) roomTimer.stop(prev);
       }
 
-      const identity = makeIdentity(socket.id, name);
+      // Identity comes from the authenticated user, never client-supplied
+      // input — so nobody can spoof another person's name in a room.
+      const identity = identityForUser(authedUser);
       socket.data.identity = identity;
       socket.data.roomId = roomId;
       socket.join(roomId);

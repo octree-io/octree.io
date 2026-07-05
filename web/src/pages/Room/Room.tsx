@@ -489,14 +489,14 @@ export default function Room() {
     liveParticipants.length > 0
       ? liveParticipants.map(p => ({
           id: p.id,
-          name: you && p.id === you.id ? 'you' : p.name,
+          name: p.name,
           color: p.color,
           initials: toInitials(p.name),
           isYou: !!you && p.id === you.id,
         }))
       : allParticipants.map(p => ({
           id: p.id,
-          name: p.id === ME_ID ? 'you' : p.name,
+          name: p.id === ME_ID ? (you?.name ?? 'you') : p.name,
           color: p.color,
           initials: p.initials,
           isYou: p.id === ME_ID,
@@ -607,7 +607,7 @@ export default function Room() {
                 onClick={() => setActiveTab(ME_ID)}
               >
                 <Avatar initials="RØ" color="#3b6fb0" size={20} />
-                <span className="ptab-name">you</span>
+                <span className="ptab-name">{you?.name ?? 'you'}</span>
                 <span className="ptab-you-dot" />
               </button>
               {OTHERS.map(p => (
@@ -757,14 +757,13 @@ export default function Room() {
                 <div className="chat-empty">{connected ? 'No messages yet — say hi 👋' : 'Connecting…'}</div>
               )}
               {messages.map(m => {
-                const isYou = !!you && m.authorId === you.id
                 return (
                   <div key={m.id} className="chat-msg">
                     <Avatar initials={toInitials(m.authorName)} color={m.authorColor} size={36} />
                     <div className="chat-msg-body">
                       <div className="chat-msg-head">
                         <span className="chat-author" style={{ color: m.authorColor }}>
-                          {isYou ? 'you' : m.authorName}
+                          {m.authorName}
                         </span>
                         <span className="chat-ts">{fmtStamp(m.createdAt)}</span>
                       </div>

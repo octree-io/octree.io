@@ -30,10 +30,34 @@ export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  // Nullable: OAuth-only accounts (e.g. Google) never set a password.
+  passwordHash: text("password_hash"),
+  googleId: text("google_id").unique(),
+  avatarUrl: text("avatar_url"),
+  emailVerified: boolean("email_verified").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// ─── Sessions ────────────────────────────────────────────────────────────────
+
+// Server-side sessions. The cookie holds an opaque random token; only its
+// SHA-256 hash is stored here, so a DB leak yields no usable session tokens.
+export const sessions = pgTable(
+  "sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    expiresAt: timestamp("expires_at").notNull(),
+  },
+  (t) => ({
+    userIdx: index("sessions_user_idx").on(t.userId),
+  }),
+);
 
 // ─── Problems ────────────────────────────────────────────────────────────────
 
@@ -167,6 +191,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   hostedRooms: many(rooms),
   participations: many(roomParticipants),
   submissions: many(submissions),
+  sessions: many(sessions),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
 export const submissionsRelations = relations(submissions, ({ one }) => ({

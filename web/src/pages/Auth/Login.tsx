@@ -1,16 +1,30 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import AuthLayout from './AuthLayout'
 import { GoogleIcon, EyeIcon, AlertIcon } from '../../components/Icons'
+import { useAuth } from '../../lib/AuthContext'
+import { AuthError, googleAuthUrl } from '../../lib/auth'
 
 interface Errors { email?: string; password?: string; form?: string }
 
 export default function Login() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from ?? '/lobby'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [loading, setLoading] = useState(false)
+
+  // Google OAuth failures redirect back here with ?error=google.
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('error') === 'google') {
+      setErrors({ form: 'Google sign-in failed or was cancelled. Try again.' })
+    }
+  }, [location.search])
 
   function validate(): Errors {
     const e: Errors = {}
@@ -27,19 +41,18 @@ export default function Login() {
     setErrors({})
     setLoading(true)
     try {
-      // TODO: call auth API
-      await new Promise(r => setTimeout(r, 900))
-      // on success: navigate('/lobby')
-    } catch {
-      setErrors({ form: 'Invalid email or password.' })
+      await login(email.trim(), password)
+      navigate(from, { replace: true })
+    } catch (err) {
+      const msg = err instanceof AuthError ? err.message : 'Something went wrong. Please try again.'
+      setErrors({ form: msg })
     } finally {
       setLoading(false)
     }
   }
 
   function handleGoogle() {
-    // TODO: initiate OAuth flow
-    window.location.href = '/auth/google'
+    window.location.href = googleAuthUrl()
   }
 
   return (

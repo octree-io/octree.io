@@ -77,6 +77,21 @@
 }
 .foot-status { font-size: 11px; color: #7b7b9a; }
 .foot-connecting { font-size: 12px; color: #7b7b9a; }
+.foot-logout {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #7b7b9a;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.foot-logout:hover { background: #1c1c26; color: #f0788c; }
 
 /* ── center: chat history ── */
 .slack-main {

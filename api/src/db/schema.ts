@@ -76,9 +76,14 @@ export const problems = pgTable("problems", {
 
 export const rooms = pgTable("rooms", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  problemId: integer("problem_id")
-    .notNull()
-    .references(() => problems.id),
+  // Human-facing room identity, set by the host at creation time.
+  name: text("name").notNull().default("Practice room"),
+  description: text("description").notNull().default(""),
+  difficulty: difficultyEnum("difficulty").notNull().default("easy"),
+  // The current problem for the room. Nullable: a room is defined by its
+  // difficulty and a matching problem is assigned when one is available, so a
+  // room can exist before any problem of that difficulty is published.
+  problemId: integer("problem_id").references(() => problems.id),
   hostId: integer("host_id")
     .notNull()
     .references(() => users.id),

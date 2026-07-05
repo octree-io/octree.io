@@ -1,13 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BrandLink } from '../../components/Logo'
 import { SendIcon, LeaveIcon, ChevronIcon, SettingsIcon } from '../../components/Icons'
 import { useAuth } from '../../lib/AuthContext'
 import {
-  useRoom, initials, LOBBY_PREFIX,
+  useRoom, useLobbyPresence, initials, LOBBY_PREFIX,
   type Identity, type ChatMessage,
 } from '../../lib/socket'
 import { fetchChannels, type Channel } from '../../lib/channels'
+import { fetchRooms, type Room } from '../../lib/rooms'
+import CreateRoomModal from './CreateRoomModal'
 import './Lobby.css'
 
 /* ---------- bits ---------- */
@@ -54,11 +56,15 @@ function sameGroup(prev: ChatMessage | undefined, m: ChatMessage): boolean {
 /* ---------- main ---------- */
 
 export default function Lobby() {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [channels, setChannels] = useState<Channel[]>([])
   const [channelId, setChannelId] = useState('')
   const [draft, setDraft] = useState('')
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [showCreate, setShowCreate] = useState(false)
+  // Live per-room occupancy (keyed by numeric room id) for the rooms list.
+  const roomPresence = useLobbyPresence()
   const [menuOpen, setMenuOpen] = useState(false)
   const footRef = useRef<HTMLElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -89,6 +95,18 @@ export default function Lobby() {
       .catch(() => { /* leave the list empty; the UI shows a loading state */ })
     return () => { alive = false }
   }, [])
+
+  // Open/active rooms for the right-hand list. Poll so rooms others create show
+  // up, and refresh right after presence changes (someone joins/leaves).
+  const refreshRooms = useCallback(() => {
+    fetchRooms().then(setRooms).catch(() => { /* keep the last good list */ })
+  }, [])
+
+  useEffect(() => {
+    refreshRooms()
+    const t = setInterval(refreshRooms, 10000)
+    return () => clearInterval(t)
+  }, [refreshRooms])
 
   const channel = channels.find((c) => c.id === channelId)
   const { messages, participants, you, connected, sendMessage, loadOlder, hasMore, loadingOlder } =
@@ -291,33 +309,77 @@ export default function Lobby() {
         </div>
       </section>
 
-      {/* ── right: members + placeholder ── */}
+      {/* ── right: members (top half) + rooms (bottom half) ── */}
       <aside className="slack-members">
-        <header className="slack-members-head">
-          <span>Members</span>
-          <span className="member-count">{participants.length}</span>
-        </header>
 
-        <ul className="member-list">
-          {participants.length === 0 && (
-            <li className="member-empty">{connected ? 'No one here yet' : 'Connecting…'}</li>
-          )}
-          {participants.map((p) => (
-            <li key={p.id} className="member-row">
-              <div className="member-avatar-wrap">
-                <Avatar person={p} size={28} />
-                <span className="member-dot" />
-              </div>
-              <span className="member-name">{p.name}</span>
-            </li>
-          ))}
-        </ul>
+        {/* top half: who's in this channel */}
+        <section className="members-pane">
+          <header className="slack-members-head">
+            <span>Members</span>
+            <span className="member-count">{participants.length}</span>
+          </header>
+          <ul className="member-list">
+            {participants.length === 0 && (
+              <li className="member-empty">{connected ? 'No one here yet' : 'Connecting…'}</li>
+            )}
+            {participants.map((p) => (
+              <li key={p.id} className="member-row">
+                <div className="member-avatar-wrap">
+                  <Avatar person={p} size={28} />
+                  <span className="member-dot" />
+                </div>
+                <span className="member-name">{p.name}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-        {/* placeholder pinned under the user list */}
-        <div className="members-placeholder">
-          <span className="placeholder-label">Placeholder</span>
-        </div>
+        {/* bottom half: open practice rooms */}
+        <section className="rooms-pane">
+          <header className="slack-members-head">
+            <span>Rooms</span>
+            <button className="rooms-new-btn" onClick={() => setShowCreate(true)}>+ New</button>
+          </header>
+          <ul className="rooms-list">
+            {rooms.length === 0 ? (
+              <li className="rooms-empty">No open rooms right now. Create one to get started.</li>
+            ) : (
+              rooms.map((r) => {
+                const occ = roomPresence.get(r.id)?.length ?? r.participants.length
+                const full = occ >= r.maxPlayers
+                return (
+                  <li key={r.id}>
+                    <button className="room-card" onClick={() => navigate(`/room/${r.slug ?? r.id}`)}>
+                      <div className="room-card-top">
+                        <span className="room-card-title">{r.name}</span>
+                        <span className={`room-diff room-diff-${r.difficulty}`}>
+                          {r.difficulty}
+                        </span>
+                      </div>
+                      {r.description && <div className="room-card-desc">{r.description}</div>}
+                      <div className="room-card-meta">
+                        <span className="room-host">@{r.host.username}</span>
+                        <span className={`room-occ${full ? ' full' : ''}`}>{occ}/{r.maxPlayers}</span>
+                      </div>
+                    </button>
+                  </li>
+                )
+              })
+            )}
+          </ul>
+        </section>
       </aside>
+
+      {showCreate && user && (
+        <CreateRoomModal
+          hostId={user.id}
+          onClose={() => setShowCreate(false)}
+          onCreated={(room) => {
+            setShowCreate(false)
+            navigate(`/room/${room.slug ?? room.id}`)
+          }}
+        />
+      )}
     </div>
   )
 }

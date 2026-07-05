@@ -15,6 +15,13 @@
       "when": 1783213591362,
       "tag": "0001_powerful_miek",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783292049027,
+      "tag": "0002_room_identity",
+      "breakpoints": true
     }
   ]
 }

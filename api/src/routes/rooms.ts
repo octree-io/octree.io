@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
-import { rooms, roomParticipants } from "../db/schema.js";
+import { rooms, roomParticipants, problems } from "../db/schema.js";
 import { ApiError } from "../middleware/error.js";
 import { encodeRoomSlug, resolveRoomId } from "../lib/roomSlug.js";
 
@@ -59,7 +59,9 @@ roomsRouter.get("/:id", async (req, res, next) => {
 
 // POST /rooms
 const createRoomSchema = z.object({
-  problemId: z.number().int().positive(),
+  name: z.string().trim().min(1, "Name is required").max(60),
+  description: z.string().trim().max(500).default(""),
+  difficulty: z.enum(["easy", "medium", "hard"]),
   hostId: z.number().int().positive(),
   durationMinutes: z.number().int().min(15).max(90).default(45),
   maxPlayers: z.number().int().min(1).max(8).default(4),
@@ -68,7 +70,19 @@ const createRoomSchema = z.object({
 roomsRouter.post("/", async (req, res, next) => {
   try {
     const data = createRoomSchema.parse(req.body);
-    const [room] = await db.insert(rooms).values(data).returning();
+
+    // A room is defined by its difficulty; seed it with a random published
+    // problem of that difficulty when one exists (null otherwise — the round
+    // timer will pick one up later as problems get published).
+    const pool = await db.query.problems.findMany({
+      where: and(eq(problems.isPublished, true), eq(problems.difficulty, data.difficulty)),
+      columns: { id: true },
+    });
+    const problemId = pool.length
+      ? pool[Math.floor(Math.random() * pool.length)].id
+      : null;
+
+    const [room] = await db.insert(rooms).values({ ...data, problemId }).returning();
     res.status(201).json(withSlug(room));
   } catch (err) {
     next(err);

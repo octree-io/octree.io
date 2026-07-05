@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { rooms, problems } from "../db/schema.js";
 import { env } from "../config.js";
@@ -46,12 +46,24 @@ async function loadProblem(problemId: number): Promise<ProblemRow | null> {
   return p ?? null;
 }
 
-// Published problems in a stable order; used to rotate to the "next" one.
-async function publishedProblems(): Promise<ProblemRow[]> {
+// Published problems of a given difficulty in a stable order; used to rotate to
+// the "next" one within the room's difficulty band.
+async function publishedProblems(difficulty: RoomRow["difficulty"]): Promise<ProblemRow[]> {
   return db.query.problems.findMany({
-    where: eq(problems.isPublished, true),
+    where: and(eq(problems.isPublished, true), eq(problems.difficulty, difficulty)),
     orderBy: (p, { asc }) => [asc(p.createdAt)],
   });
+}
+
+// The room's current problem, assigning (and persisting) a difficulty-matched
+// one on demand when the room doesn't have a problem yet.
+async function currentProblemFor(room: RoomRow): Promise<ProblemRow | null> {
+  if (room.problemId !== null) return loadProblem(room.problemId);
+  const first = (await publishedProblems(room.difficulty))[0] ?? null;
+  if (first) {
+    await db.update(rooms).set({ problemId: first.id }).where(eq(rooms.id, room.id));
+  }
+  return first;
 }
 
 /**
@@ -87,7 +99,7 @@ export async function startOrResume(
 
   arm(io, roomId, endsAt - now);
 
-  const problem = await loadProblem(room.problemId);
+  const problem = await currentProblemFor(room);
   return {
     problem: problem ? problemPayload(problem) : null,
     round: { number: roundNumber, endsAt: new Date(endsAt).toISOString() },
@@ -109,7 +121,7 @@ async function rotate(io: RealtimeServer, roomId: string): Promise<void> {
   const room = await loadRoom(roomId);
   if (!room) return;
 
-  const all = await publishedProblems();
+  const all = await publishedProblems(room.difficulty);
   if (all.length === 0) return;
 
   const idx = all.findIndex((p) => p.id === room.problemId);

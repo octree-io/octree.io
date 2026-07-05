@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "../db/index.js";
 import { problems } from "../db/schema.js";
 import { ApiError } from "../middleware/error.js";
+import { humanizeTitle } from "../lib/humanizeTitle.js";
 
 export const problemsRouter = Router();
 
@@ -27,7 +28,7 @@ problemsRouter.get("/", async (_req, res, next) => {
       columns: PUBLIC_COLUMNS,
       orderBy: (p, { asc }) => [asc(p.difficulty), asc(p.title)],
     });
-    res.json(rows);
+    res.json(rows.map((p) => ({ ...p, title: humanizeTitle(p.title) })));
   } catch (err) {
     next(err);
   }
@@ -41,7 +42,7 @@ problemsRouter.get("/:slug", async (req, res, next) => {
       columns: PUBLIC_COLUMNS,
     });
     if (!problem) throw new ApiError(404, "Problem not found");
-    res.json(problem);
+    res.json({ ...problem, title: humanizeTitle(problem.title) });
   } catch (err) {
     next(err);
   }

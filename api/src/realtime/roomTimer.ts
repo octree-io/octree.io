@@ -4,6 +4,7 @@ import { rooms, problems } from "../db/schema.js";
 import { env } from "../config.js";
 import { resolveRoomId } from "../lib/roomSlug.js";
 import { countPresence } from "./presence.js";
+import { humanizeTitle } from "../lib/humanizeTitle.js";
 import type { ProblemPayload, RoundPayload, RoomPhase, RealtimeServer } from "./types.js";
 
 type RoomRow = typeof rooms.$inferSelect;
@@ -34,7 +35,7 @@ function problemPayload(p: ProblemRow): ProblemPayload {
   return {
     id: p.id,
     slug: p.slug,
-    title: p.title,
+    title: humanizeTitle(p.title),
     difficulty: p.difficulty,
     description: p.description,
   };

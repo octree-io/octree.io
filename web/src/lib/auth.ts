@@ -46,6 +46,11 @@ export function logout(): Promise<null> {
   return request<null>('/logout', { method: 'POST' })
 }
 
+/** Update the signed-in user's profile (currently just the username). */
+export function updateProfile(body: { username: string }): Promise<AuthUser> {
+  return request<AuthUser>('/me', { method: 'PATCH', body: JSON.stringify(body) })
+}
+
 /** Current user, or null if not signed in. */
 export async function fetchMe(): Promise<AuthUser | null> {
   const res = await fetch(`${BASE}/me`, { credentials: 'include' })

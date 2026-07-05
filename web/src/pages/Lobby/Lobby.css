@@ -173,6 +173,13 @@
   gap: 2px;
 }
 
+.slack-history-status {
+  text-align: center;
+  font-size: 12px;
+  color: #6b6b83;
+  padding: 10px 0;
+}
+
 .channel-intro {
   padding: 24px 0 20px;
   border-bottom: 1px solid #1c1c26;

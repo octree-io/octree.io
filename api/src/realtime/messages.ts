@@ -1,7 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { chatMessages } from "../db/schema.js";
-import type { ChatMessagePayload, Identity } from "./types.js";
+import type { ChatMessagePayload, HistoryResult, Identity } from "./types.js";
+
+// Page size for both the initial load and each scroll-back page.
+export const HISTORY_PAGE = 50;
 
 type Row = typeof chatMessages.$inferSelect;
 
@@ -20,14 +23,31 @@ function toPayload(row: Row): ChatMessagePayload {
 // Most recent `limit` messages for a room, returned oldest → newest.
 export async function loadRecentMessages(
   roomId: string,
-  limit = 50,
+  limit = HISTORY_PAGE,
 ): Promise<ChatMessagePayload[]> {
   const rows = await db.query.chatMessages.findMany({
     where: eq(chatMessages.roomId, roomId),
-    orderBy: (m, { desc }) => [desc(m.createdAt)],
+    orderBy: (m, { desc }) => [desc(m.id)],
     limit,
   });
   return rows.reverse().map(toPayload);
+}
+
+// One page of messages older than `beforeId`, returned oldest → newest, plus a
+// flag for whether even older messages remain (fetch limit+1 to detect it).
+export async function loadMessagesBefore(
+  roomId: string,
+  beforeId: number,
+  limit = HISTORY_PAGE,
+): Promise<HistoryResult> {
+  const rows = await db.query.chatMessages.findMany({
+    where: and(eq(chatMessages.roomId, roomId), lt(chatMessages.id, beforeId)),
+    orderBy: (m, { desc }) => [desc(m.id)],
+    limit: limit + 1,
+  });
+  const hasMore = rows.length > limit;
+  const page = rows.slice(0, limit).reverse().map(toPayload);
+  return { messages: page, hasMore };
 }
 
 // Only Chat lobby channels are durably logged. Their room ids carry this prefix

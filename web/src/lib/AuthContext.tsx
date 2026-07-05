@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as auth from './auth'
 import type { AuthUser } from './auth'
+import { refreshSocketIdentity } from './socket'
 
 interface AuthState {
   user: AuthUser | null
@@ -8,6 +9,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<AuthUser>
   register: (body: { username: string; email: string; password: string }) => Promise<AuthUser>
   logout: () => Promise<void>
+  updateProfile: (body: { username: string }) => Promise<AuthUser>
   refresh: () => Promise<void>
 }
 
@@ -46,8 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  const updateProfile = useCallback(async (body: { username: string }) => {
+    const u = await auth.updateProfile(body)
+    setUser(u)
+    // Reconnect the realtime socket so it re-reads the new username; the Lobby
+    // then shows the updated identity as soon as you return to it.
+    refreshSocketIdentity()
+    return u
+  }, [])
+
   return (
-    <AuthCtx.Provider value={{ user, loading, login, register, logout, refresh }}>
+    <AuthCtx.Provider value={{ user, loading, login, register, logout, updateProfile, refresh }}>
       {children}
     </AuthCtx.Provider>
   )

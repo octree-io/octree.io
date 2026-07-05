@@ -55,9 +55,22 @@ export interface SendPayload {
   body: string;
 }
 
+// Cursor-based backfill: fetch the page of messages immediately older than
+// `before` (an existing message id) for the socket's current room.
+export interface HistoryPayload {
+  before: number;
+  limit?: number;
+}
+export interface HistoryResult {
+  messages: ChatMessagePayload[];
+  hasMore: boolean;
+}
+
 export interface ClientToServerEvents {
   "room:join": (p: JoinPayload) => void;
   "chat:send": (p: SendPayload) => void;
+  // Load older messages (scroll-back pagination). Replies via ack callback.
+  "chat:history": (p: HistoryPayload, cb: (res: HistoryResult) => void) => void;
   // Subscribe/unsubscribe to live occupancy of all rooms (the lobby directory).
   "lobby:join": () => void;
   "lobby:leave": () => void;

@@ -117,6 +117,36 @@ authRouter.get("/me", requireAuth, (req, res) => {
   res.json(req.user);
 });
 
+const updateMeSchema = z.object({
+  username: z.string().regex(/^[a-zA-Z0-9_-]{3,15}$/, "3–15 chars: letters, numbers, _ or -"),
+});
+
+// PATCH /me — update the signed-in user's profile (currently just username).
+authRouter.patch("/me", requireAuth, async (req, res, next) => {
+  try {
+    const { username } = updateMeSchema.parse(req.body);
+    const me = req.user!;
+
+    if (username !== me.username) {
+      const taken = await db.query.users.findFirst({
+        where: eq(users.username, username),
+        columns: { id: true },
+      });
+      if (taken) throw new ApiError(409, "Username taken");
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ username, updatedAt: new Date() })
+      .where(eq(users.id, me.id))
+      .returning();
+
+    res.json(toAuthUser(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* ─── Google OAuth (Authorization Code + PKCE) ─────────────────────────────── */
 
 const G_STATE = "g_state";

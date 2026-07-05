@@ -7,9 +7,11 @@ import { addPresence, removePresence, listPresence, countPresence } from "./pres
 import { LOBBY_ROOM, lobbySnapshot, broadcastLobbyPresence } from "./lobby.js";
 import {
   loadRecentMessages,
+  loadMessagesBefore,
   saveMessage,
   makeEphemeralMessage,
   isPersistentRoom,
+  HISTORY_PAGE,
 } from "./messages.js";
 import * as roomTimer from "./roomTimer.js";
 import type {
@@ -103,6 +105,23 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
     });
     socket.on("lobby:leave", () => {
       socket.leave(LOBBY_ROOM);
+    });
+
+    // Scroll-back pagination: return the page of messages older than `before`.
+    socket.on("chat:history", async ({ before, limit }, cb) => {
+      if (typeof cb !== "function") return;
+      const roomId = socket.data.roomId;
+      // Only persistent Chat channels have history to page through.
+      if (!roomId || !isPersistentRoom(roomId) || !Number.isInteger(before) || before <= 0) {
+        return cb({ messages: [], hasMore: false });
+      }
+      try {
+        const size = Number.isInteger(limit) ? Math.min(Math.max(limit!, 1), HISTORY_PAGE) : HISTORY_PAGE;
+        cb(await loadMessagesBefore(roomId, before, size));
+      } catch (err) {
+        console.error("[realtime] chat:history failed:", err);
+        cb({ messages: [], hasMore: false });
+      }
     });
 
     socket.on("chat:send", async ({ body }) => {

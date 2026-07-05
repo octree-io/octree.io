@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /* ---------- shared event contract (mirrors api/src/realtime/types.ts) ---------- */
 
@@ -56,9 +56,15 @@ interface ServerToClientEvents {
   'error:msg': (p: { message: string }) => void
 }
 
+interface HistoryResult {
+  messages: ChatMessage[]
+  hasMore: boolean
+}
+
 interface ClientToServerEvents {
   'room:join': (p: { roomId: string; name?: string }) => void
   'chat:send': (p: { body: string }) => void
+  'chat:history': (p: { before: number; limit?: number }, cb: (res: HistoryResult) => void) => void
   'lobby:join': () => void
   'lobby:leave': () => void
 }
@@ -80,7 +86,23 @@ export function getSocket(): AppSocket {
   return socket
 }
 
+/**
+ * Force the realtime socket to re-authenticate. The server caches the user's
+ * identity (incl. username) at handshake time, so after a profile change we
+ * reconnect to pull the fresh identity — the next `room:join` then broadcasts
+ * the updated name. No-op if the socket was never opened.
+ */
+export function refreshSocketIdentity(): void {
+  if (socket) {
+    socket.disconnect().connect()
+  }
+}
+
 /* ---------- useRoom hook ---------- */
+
+// Initial history page size; mirrors HISTORY_PAGE on the server. Used to seed
+// `hasMore` — a full first page means older messages may exist to page back to.
+export const HISTORY_PAGE = 50
 
 export interface UseRoom {
   connected: boolean
@@ -90,6 +112,12 @@ export interface UseRoom {
   problem: Problem | null
   round: Round | null
   sendMessage: (body: string) => void
+  /** Load the next older page of messages (scroll-back pagination). */
+  loadOlder: () => void
+  /** Whether older messages remain to be loaded. */
+  hasMore: boolean
+  /** True while an older page is in flight. */
+  loadingOlder: boolean
 }
 
 /**
@@ -111,6 +139,15 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [problem, setProblem] = useState<Problem | null>(null)
   const [round, setRound] = useState<Round | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingOlder, setLoadingOlder] = useState(false)
+
+  // Refs let the stable `loadOlder` callback read live values without deps.
+  const messagesRef = useRef<ChatMessage[]>([])
+  const hasMoreRef = useRef(false)
+  const loadingRef = useRef(false)
+  messagesRef.current = messages
+  hasMoreRef.current = hasMore
 
   useEffect(() => {
     if (!roomId) return
@@ -121,6 +158,9 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     setParticipants([])
     setProblem(null)
     setRound(null)
+    setHasMore(false)
+    setLoadingOlder(false)
+    loadingRef.current = false
 
     const join = () => {
       setConnected(true)
@@ -133,6 +173,8 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       setMessages(state.messages)
       setProblem(state.problem)
       setRound(state.round)
+      // A full first page implies there may be older messages to page back to.
+      setHasMore(state.messages.length >= HISTORY_PAGE)
     }
     const onMessage = (m: ChatMessage) => {
       if (m.roomId === roomId) setMessages((prev) => [...prev, m])
@@ -171,7 +213,31 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     if (text) getSocket().emit('chat:send', { body: text })
   }, [])
 
-  return { connected, you, participants, messages, problem, round, sendMessage }
+  const loadOlder = useCallback(() => {
+    if (loadingRef.current || !hasMoreRef.current) return
+    // Cursor = oldest currently-loaded message. Ephemeral messages have ids ≤ 0
+    // and no server-side history, so there's nothing to page.
+    const oldest = messagesRef.current[0]
+    if (!oldest || oldest.id <= 0) return
+
+    loadingRef.current = true
+    setLoadingOlder(true)
+    getSocket().emit('chat:history', { before: oldest.id }, (res) => {
+      loadingRef.current = false
+      setLoadingOlder(false)
+      setHasMore(res.hasMore)
+      if (res.messages.length) {
+        // Drop any that raced in via live updates, then prepend.
+        setMessages((prev) => {
+          const known = new Set(prev.map((m) => m.id))
+          const older = res.messages.filter((m) => !known.has(m.id))
+          return older.length ? [...older, ...prev] : prev
+        })
+      }
+    })
+  }, [])
+
+  return { connected, you, participants, messages, problem, round, sendMessage, loadOlder, hasMore, loadingOlder }
 }
 
 /* ---------- useLobbyPresence hook ---------- */

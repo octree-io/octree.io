@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BrandLink } from '../../components/Logo'
 import { SendIcon, LeaveIcon, ChevronIcon, SettingsIcon } from '../../components/Icons'
@@ -46,6 +46,19 @@ function fmtTime(iso: string) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+// Consecutive messages from the same author collapse into one visual group,
+// unless the author's name changed (e.g. a username update) or more than this
+// long has passed since their previous message.
+const GROUP_WINDOW_MS = 15 * 60 * 1000
+
+function sameGroup(prev: ChatMessage | undefined, m: ChatMessage): boolean {
+  if (!prev) return false
+  if (prev.authorId !== m.authorId) return false
+  if (prev.authorName !== m.authorName) return false
+  const gap = new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime()
+  return Number.isFinite(gap) && gap < GROUP_WINDOW_MS
+}
+
 /* ---------- main ---------- */
 
 export default function Lobby() {
@@ -56,6 +69,12 @@ export default function Lobby() {
   const [menuOpen, setMenuOpen] = useState(false)
   const footRef = useRef<HTMLElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef(channelId)
+  const prevFirstIdRef = useRef<number | null>(null)
+  // Set when we deliberately request an older page, so the layout effect can
+  // tell a scroll-back prepend from a normal incoming message.
+  const anchorRef = useRef<{ height: number; top: number } | null>(null)
 
   async function handleLogout() {
     await logout()
@@ -63,11 +82,46 @@ export default function Lobby() {
   }
 
   const channel = CHANNELS.find((c) => c.id === channelId) ?? CHANNELS[0]
-  const { messages, participants, you, connected, sendMessage } = useRoom(LOBBY_PREFIX + channelId)
+  const { messages, participants, you, connected, sendMessage, loadOlder, hasMore, loadingOlder } =
+    useRoom(LOBBY_PREFIX + channelId)
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length, channelId])
+  // Near the top → pull the next older page, remembering the scroll anchor.
+  function handleScroll() {
+    const el = scrollRef.current
+    if (!el || !hasMore || loadingOlder) return
+    if (el.scrollTop < 80) {
+      anchorRef.current = { height: el.scrollHeight, top: el.scrollTop }
+      loadOlder()
+    }
+  }
+
+  // Keep the reading position stable when older messages are prepended, but
+  // stick to the bottom for new messages and channel switches.
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const firstId = messages[0]?.id ?? null
+    const channelChanged = channelRef.current !== channelId
+    channelRef.current = channelId
+
+    const prepended =
+      !channelChanged &&
+      anchorRef.current !== null &&
+      prevFirstIdRef.current !== null &&
+      firstId !== null &&
+      firstId < prevFirstIdRef.current
+    prevFirstIdRef.current = firstId
+
+    if (prepended && anchorRef.current) {
+      const { height, top } = anchorRef.current
+      anchorRef.current = null
+      el.scrollTop = el.scrollHeight - height + top
+      return
+    }
+
+    anchorRef.current = null
+    endRef.current?.scrollIntoView({ behavior: channelChanged ? 'auto' : 'smooth' })
+  }, [messages, channelId])
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -131,7 +185,7 @@ export default function Lobby() {
               </button>
               {menuOpen && (
                 <div className="foot-dropdown">
-                  <button className="foot-dropdown-item" onClick={() => setMenuOpen(false)}>
+                  <button className="foot-dropdown-item" onClick={() => { setMenuOpen(false); navigate('/settings') }}>
                     <SettingsIcon />
                     <span>Settings</span>
                   </button>
@@ -158,16 +212,22 @@ export default function Lobby() {
           <span className="channel-topic">{channel.topic}</span>
         </header>
 
-        <div className="slack-messages">
-          <div className="channel-intro">
-            <div className="channel-intro-glyph"><HashIcon size={26} /></div>
-            <h2>#{channel.name}</h2>
-            <p>This is the start of the <strong>#{channel.name}</strong> channel. {channel.topic}.</p>
-          </div>
+        <div className="slack-messages" ref={scrollRef} onScroll={handleScroll}>
+          {loadingOlder && (
+            <div className="slack-history-status">Loading earlier messages…</div>
+          )}
+
+          {!hasMore && (
+            <div className="channel-intro">
+              <div className="channel-intro-glyph"><HashIcon size={26} /></div>
+              <h2>#{channel.name}</h2>
+              <p>This is the start of the <strong>#{channel.name}</strong> channel. {channel.topic}.</p>
+            </div>
+          )}
 
           {messages.map((m: ChatMessage, i) => {
             const prev = messages[i - 1]
-            const grouped = prev && prev.authorId === m.authorId
+            const grouped = sameGroup(prev, m)
             const ts = fmtTime(m.createdAt)
             return (
               <div key={m.id} className={`slack-msg${grouped ? ' grouped' : ''}`}>

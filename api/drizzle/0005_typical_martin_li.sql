@@ -1,0 +1,1 @@
+ALTER TABLE "problems" ADD COLUMN "starter_code" jsonb;

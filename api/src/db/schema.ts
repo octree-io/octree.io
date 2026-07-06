@@ -6,6 +6,7 @@ import {
   boolean,
   pgEnum,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -72,6 +73,11 @@ export const problems = pgTable("problems", {
   // Reference solution (imported alongside the problem). Server-only — never
   // exposed to clients while a round is being solved.
   solution: text("solution"),
+  // Per-language starter code shown in the editor, keyed by language slug
+  // (python3 / cpp / java / javascript). The signature is renamed so the
+  // function matches this problem's (disguised) title instead of the original
+  // LeetCode name — e.g. `twoSum` → `treasureHuntPair`.
+  starterCode: jsonb("starter_code").$type<Record<string, string>>(),
   difficulty: difficultyEnum("difficulty").notNull(),
   tags: text("tags").array().notNull().default([]),
   isPublished: boolean("is_published").notNull().default(false),

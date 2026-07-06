@@ -4,7 +4,7 @@ import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
 import {
   SendIcon, PlayIcon, UploadIcon, LeaveIcon,
-  CheckIcon, XIcon, LockIcon,
+  CheckIcon, XIcon,
 } from '../../components/Icons'
 import { useRoom, initials as toInitials } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
@@ -13,16 +13,6 @@ import './Room.css'
 /* ---------- types ---------- */
 
 type Lang = 'python' | 'java' | 'cpp' | 'javascript'
-
-interface OtherParticipant {
-  id: string
-  name: string
-  color: string
-  initials: string
-  status: 'online' | 'typing' | 'submitted'
-  lang: Lang
-  code: string
-}
 
 interface TestResult {
   index: number
@@ -103,102 +93,6 @@ var twoSum = function(nums, target) {
 };
 `,
 }
-
-const OTHERS: OtherParticipant[] = [
-  {
-    id: '1', name: 'ava', color: '#7c5cbf', initials: 'AV',
-    status: 'submitted', lang: 'python',
-    code: `from typing import List
-
-class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        seen = {}
-        for i, n in enumerate(nums):
-            complement = target - n
-            if complement in seen:
-                return [seen[complement], i]
-            seen[n] = i
-        return []
-`,
-  },
-  {
-    id: '2', name: 'jonas', color: '#2f7d5b', initials: 'JN',
-    status: 'online', lang: 'java',
-    code: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // brute force, optimize later
-        for (int i = 0; i < nums.length; i++) {
-            for (int j = i + 1; j < nums.length; j++) {
-                if (nums[i] + nums[j] == target) {
-                    return new int[] { i, j };
-                }
-            }
-        }
-        return new int[] {};
-    }
-}
-`,
-  },
-  {
-    id: '3', name: 'mikael', color: '#b45f9d', initials: 'MK',
-    status: 'typing', lang: 'javascript',
-    code: `var twoSum = function(nums, target) {
-    const map = new Map();
-    for (let i = 0; i < nums.length; i++) {
-        const comp = target - nums[i];
-        if (map.has(comp
-`,
-  },
-  {
-    id: '4', name: 'liam', color: '#c2703d', initials: 'LM',
-    status: 'online', lang: 'cpp',
-    code: `class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // TODO
-    }
-};
-`,
-  },
-  {
-    id: '5', name: 'sofia', color: '#3d9a9a', initials: 'SF',
-    status: 'online', lang: 'python',
-    code: `class Solution:
-    def twoSum(self, nums, target):
-        pass
-`,
-  },
-  {
-    id: '6', name: 'dev', color: '#8a63d2', initials: 'DV',
-    status: 'typing', lang: 'java',
-    code: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-
-    }
-}
-`,
-  },
-  {
-    id: '7', name: 'priya', color: '#d24f7c', initials: 'PR',
-    status: 'online', lang: 'javascript',
-    code: `var twoSum = function(nums, target) {
-
-};
-`,
-  },
-  {
-    id: '8', name: 'tom', color: '#5c8fd6', initials: 'TM',
-    status: 'submitted', lang: 'python',
-    code: `class Solution:
-    def twoSum(self, nums, target):
-        d = {}
-        for i, x in enumerate(nums):
-            if target - x in d:
-                return [d[target - x], i]
-            d[x] = i
-`,
-  },
-]
 
 /* ---------- monaco theme ---------- */
 
@@ -327,7 +221,6 @@ export default function Room() {
   /* editor — one code buffer per language, so switching langs preserves progress */
   const [lang, setLang] = useState<Lang>('python')
   const [codeByLang, setCodeByLang] = useState<Record<Lang, string>>(STARTER)
-  const [activeTab, setActiveTab] = useState<string>(ME_ID)
   const myCode = codeByLang[lang]
 
   /* room */
@@ -501,20 +394,11 @@ export default function Room() {
       : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const viewingOther      = activeTab !== ME_ID
-  const activeOther       = OTHERS.find(p => p.id === activeTab)
   const passedCount       = results?.filter(r => r.passed).length ?? 0
   const totalCount        = results?.length ?? 0
   const allPassed         = results !== null && passedCount === totalCount
 
-  const me: OtherParticipant = {
-    id: ME_ID, name: 'you', color: '#3b6fb0', initials: 'RØ',
-    status: submitted ? 'submitted' : 'online', lang,
-    code: myCode,
-  }
-  const allParticipants = [me, ...OTHERS]
-
-  // "in the room" roster: real socket presence when connected, else the mock.
+  // "in the room" roster: real socket presence when connected, else fallback to you.
   const roster =
     liveParticipants.length > 0
       ? liveParticipants.map(p => ({
@@ -524,13 +408,13 @@ export default function Room() {
           initials: toInitials(p.name),
           isYou: !!you && p.id === you.id,
         }))
-      : allParticipants.map(p => ({
-          id: p.id,
-          name: p.id === ME_ID ? (you?.name ?? 'you') : p.name,
-          color: p.color,
-          initials: p.initials,
-          isYou: p.id === ME_ID,
-        }))
+      : [{
+          id: ME_ID,
+          name: you?.name ?? 'you',
+          color: '#3b6fb0',
+          initials: 'RØ',
+          isYou: true,
+        }]
 
   const difficultyChip = liveProblem
     ? `chip-${liveProblem.difficulty}`
@@ -644,84 +528,53 @@ export default function Room() {
           {/* participant tabs + language selector */}
           <div className="participant-tabs">
             <div className="ptab-list">
-              {/* your tab — always first */}
-              <button
-                className={`ptab ptab-mine${activeTab === ME_ID ? ' ptab-active' : ''}`}
-                onClick={() => setActiveTab(ME_ID)}
-              >
+              <button className="ptab ptab-mine ptab-active">
                 <Avatar initials="RØ" color="#3b6fb0" size={20} />
                 <span className="ptab-name">{you?.name ?? 'you'}</span>
                 <span className="ptab-you-dot" />
               </button>
-              {OTHERS.map(p => (
-                <button
-                  key={p.id}
-                  className={`ptab${activeTab === p.id ? ' ptab-active' : ''}`}
-                  onClick={() => setActiveTab(p.id)}
-                >
-                  <Avatar initials={p.initials} color={p.color} size={20} />
-                  <span className="ptab-name">{p.name}</span>
-                </button>
-              ))}
             </div>
 
             <div className="ptab-lang">
-              {viewingOther && activeOther ? (
-                <span className="lang-badge">{LANG_LABELS[activeOther.lang]}</span>
-              ) : (
-                <LangSelect value={lang} onChange={switchLang} />
-              )}
+              <LangSelect value={lang} onChange={switchLang} />
             </div>
           </div>
 
           {/* editor body */}
           <div className="editor-body">
-            {viewingOther && activeOther ? (
-              /* blurred readonly view */
-              <div className="blurred-editor">
-                <pre className="blurred-code">{activeOther.code}</pre>
-                <div className="blur-overlay">
-                  <LockIcon />
-                  <span>Solutions unlock when the round ends</span>
-                </div>
-              </div>
-            ) : (
-              /* your live Monaco editor */
-              <Editor
-                language={MONACO_LANG[lang]}
-                value={myCode}
-                onChange={v => updateMyCode(v ?? '')}
-                theme="octree"
-                beforeMount={setupTheme}
-                options={{
-                  fontSize: 13,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                  fontLigatures: true,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  lineNumbers: 'on',
-                  padding: { top: 14, bottom: 14 },
-                  wordWrap: 'off',
-                  tabSize: 4,
-                  renderWhitespace: 'selection',
-                  smoothScrolling: true,
-                  cursorBlinking: 'phase',
-                  cursorSmoothCaretAnimation: 'on',
-                  overviewRulerBorder: false,
-                  hideCursorInOverviewRuler: true,
-                  scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 5 },
-                }}
-              />
-            )}
+            <Editor
+              language={MONACO_LANG[lang]}
+              value={myCode}
+              onChange={v => updateMyCode(v ?? '')}
+              theme="octree"
+              beforeMount={setupTheme}
+              options={{
+                fontSize: 13,
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                fontLigatures: true,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                lineNumbers: 'on',
+                padding: { top: 14, bottom: 14 },
+                wordWrap: 'off',
+                tabSize: 4,
+                renderWhitespace: 'selection',
+                smoothScrolling: true,
+                cursorBlinking: 'phase',
+                cursorSmoothCaretAnimation: 'on',
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+                scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 5 },
+              }}
+            />
           </div>
 
           {/* run panel — always visible; hosts run/submit and their output */}
           <div className="run-panel">
             <div className="run-panel-header">
               <span className="run-panel-title">Console</span>
-              {!viewingOther && submitted && <span className="submit-badge">✓ submitted</span>}
-              {!viewingOther && (
-                <div className="run-panel-actions">
+              {submitted && <span className="submit-badge">✓ submitted</span>}
+              <div className="run-panel-actions">
                   <button className="btn-run" onClick={handleRun} disabled={runLoading || submitLoading}>
                     <PlayIcon />{runLoading ? 'Running…' : 'Run'}
                   </button>
@@ -733,13 +586,10 @@ export default function Room() {
                     <UploadIcon />{submitLoading ? 'Submitting…' : 'Submit'}
                   </button>
                 </div>
-              )}
             </div>
 
             <div className="run-panel-body">
-              {viewingOther ? (
-                <div className="run-panel-empty">Read-only — you're viewing {activeOther?.name}'s code.</div>
-              ) : runLoading || submitLoading ? (
+              {runLoading || submitLoading ? (
                 <div className="run-panel-empty">{submitLoading ? 'Submitting…' : 'Running against test cases…'}</div>
               ) : results ? (
                 <>

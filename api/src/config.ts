@@ -30,6 +30,15 @@ export const env = {
   roundSeconds: process.env.ROUND_SECONDS
     ? parseInt(process.env.ROUND_SECONDS, 10)
     : null,
+  // Round timing, in minutes. Solving time is chosen by problem difficulty; the
+  // review window (solutions revealed) is fixed per round. ROUND_SECONDS, when
+  // set, overrides all of these so the cycle is fast to observe.
+  timeLimitMinutes: {
+    easy: parseInt(process.env.TIME_LIMIT_EASY_MINUTES ?? "15", 10),
+    medium: parseInt(process.env.TIME_LIMIT_MEDIUM_MINUTES ?? "25", 10),
+    hard: parseInt(process.env.TIME_LIMIT_HARD_MINUTES ?? "45", 10),
+    review: parseInt(process.env.REVIEW_TIME_MINUTES ?? "10", 10),
+  },
   // Session cookie settings. Secure in production; SameSite=Lax works for the
   // same-site web↔api split in dev and typical prod subdomains.
   cookie: {

@@ -15,14 +15,15 @@ type Difficulty = RoomRow["difficulty"];
 // several people join the same room.
 const timers = new Map<string, NodeJS.Timeout>();
 
-// Solving time by difficulty, and a fixed review window after every round.
-// ROUND_SECONDS, when set, overrides both so the cycle is fast to observe.
+// Solving time by difficulty, and a fixed review window after every round, all
+// sourced from env (TIME_LIMIT_*_MINUTES / REVIEW_TIME_MINUTES). ROUND_SECONDS,
+// when set, overrides both so the cycle is fast to observe.
 const SOLVE_SECONDS: Record<Difficulty, number> = {
-  easy: 15 * 60,
-  medium: 25 * 60,
-  hard: 45 * 60,
+  easy: env.timeLimitMinutes.easy * 60,
+  medium: env.timeLimitMinutes.medium * 60,
+  hard: env.timeLimitMinutes.hard * 60,
 };
-const REVIEW_SECONDS = 10 * 60;
+const REVIEW_SECONDS = env.timeLimitMinutes.review * 60;
 
 function solveSeconds(room: RoomRow): number {
   return env.roundSeconds ?? SOLVE_SECONDS[room.difficulty];

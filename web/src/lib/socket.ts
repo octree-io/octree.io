@@ -216,7 +216,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     const onPresence = (p: { roomId: string; participants: Identity[] }) => {
       if (p.roomId === roomId) setParticipants(p.participants)
     }
-    const onProblem = (p: { roomId: string; problem: Problem; round: Round }) => {
+    const onProblem = (p: { roomId: string; problem: Problem | null; round: Round }) => {
       if (p.roomId !== roomId) return
       setProblem(p.problem)
       setRound(p.round)

@@ -12,13 +12,5 @@
 .brand-dot { color: var(--purple); }
 
 .logo-mark {
-  stroke: var(--purple);
-  stroke-width: 1.7;
-  fill: none;
   overflow: visible;
 }
-.logo-mark circle {
-  fill: var(--surface);
-  stroke: var(--purple);
-}
-.logo-mark .node-root { fill: var(--purple); }

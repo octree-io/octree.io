@@ -273,7 +273,10 @@ export default function Lobby() {
               <div key={m.id} className={`slack-msg${grouped ? ' grouped' : ''}`}>
                 <div className="slack-msg-gutter">
                   {grouped
-                    ? <span className="slack-msg-hovertime">{ts}</span>
+                    ? <>
+                        <span className="slack-msg-hovertime">{ts}</span>
+                        <span className="ts-tooltip">{new Date(m.createdAt).toLocaleString('en-US')}</span>
+                      </>
                     : <Avatar person={{ id: m.authorId, name: m.authorName, color: m.authorColor }} />}
                 </div>
                 <div className="slack-msg-body">

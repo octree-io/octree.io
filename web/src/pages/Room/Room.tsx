@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
@@ -6,7 +7,7 @@ import {
   SendIcon, PlayIcon, UploadIcon, LeaveIcon,
   CheckIcon, XIcon,
 } from '../../components/Icons'
-import { useRoom, initials as toInitials } from '../../lib/socket'
+import { useRoom, initials as toInitials, sameGroup, type ChatMessage } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
 import './Room.css'
 
@@ -198,6 +199,7 @@ export default function Room() {
   const [submitLoading, setSubmitLoading] = useState(false)
   const [results,       setResults]       = useState<TestResult[] | null>(null)
   const [submitted,     setSubmitted]     = useState(false)
+  const [tsTooltip,     setTsTooltip]     = useState<{ text: string; x: number; y: number } | null>(null)
 
   // realtime: anonymous presence + chat, plus the live problem & round timer
   const {
@@ -622,17 +624,45 @@ export default function Room() {
               {messages.length === 0 && (
                 <div className="chat-empty">{connected ? 'No messages yet — say hi 👋' : 'Connecting…'}</div>
               )}
-              {messages.map(m => {
+              {messages.map((m: ChatMessage, i) => {
+                const prev = messages[i - 1]
+                const grouped = sameGroup(prev, m)
+                const showTsTooltip = (e: React.MouseEvent<HTMLElement>) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setTsTooltip({
+                    text: new Date(m.createdAt).toLocaleString('en-US', { hour12: true }),
+                    x: rect.left + rect.width / 2,
+                    y: rect.top,
+                  })
+                }
                 return (
-                  <div key={m.id} className="chat-msg">
-                    <Avatar initials={toInitials(m.authorName)} color={m.authorColor} size={36} />
+                  <div key={m.id} className={`chat-msg${grouped ? ' grouped' : ''}`}>
+                    <div className="chat-msg-gutter">
+                      {grouped
+                        ? <span
+                            className="chat-msg-hovertime"
+                            onMouseEnter={showTsTooltip}
+                            onMouseLeave={() => setTsTooltip(null)}
+                          >
+                            {fmtStamp(m.createdAt)}
+                          </span>
+                        : <Avatar initials={toInitials(m.authorName)} color={m.authorColor} size={36} />}
+                    </div>
                     <div className="chat-msg-body">
-                      <div className="chat-msg-head">
-                        <span className="chat-author" style={{ color: m.authorColor }}>
-                          {m.authorName}
-                        </span>
-                        <span className="chat-ts">{fmtStamp(m.createdAt)}</span>
-                      </div>
+                      {!grouped && (
+                        <div className="chat-msg-head">
+                          <span className="chat-author" style={{ color: m.authorColor }}>
+                            {m.authorName}
+                          </span>
+                          <span
+                            className="chat-ts"
+                            onMouseEnter={showTsTooltip}
+                            onMouseLeave={() => setTsTooltip(null)}
+                          >
+                            {fmtStamp(m.createdAt)}
+                          </span>
+                        </div>
+                      )}
                       <span className="chat-text">{m.body}</span>
                     </div>
                   </div>
@@ -654,6 +684,13 @@ export default function Room() {
           </div>
         </aside>
       </div>
+
+      {tsTooltip && createPortal(
+        <div className="ts-tooltip" style={{ left: tsTooltip.x, top: tsTooltip.y }}>
+          {tsTooltip.text}
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }

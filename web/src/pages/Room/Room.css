@@ -716,6 +716,24 @@
 }
 .chat-msg:hover { background: var(--surface2); }
 .chat-msg .avatar { flex-shrink: 0; margin-top: 2px; }
+.chat-msg.grouped { padding-top: 1px; padding-bottom: 1px; }
+
+.chat-msg-gutter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  padding-top: 2px;
+}
+.chat-msg-hovertime {
+  font-size: 9px;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .1s ease;
+  cursor: default;
+}
+.chat-msg:hover .chat-msg-hovertime { opacity: 1; }
 
 .chat-msg-body { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
 .chat-msg-head {
@@ -731,11 +749,55 @@
 .chat-ts {
   font-size: 0.66rem; color: var(--muted);
   font-family: var(--mono); line-height: 1.2;
+  cursor: default;
 }
 .chat-text {
   color: var(--text); line-height: 1.45;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+/* Rendered via a React portal into document.body (see Room.tsx), so it's
+   positioned with viewport coordinates and escapes the chat panel's scroll
+   clipping — same pattern as the Lobby's timestamp tooltip. */
+.ts-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));
+  background: #1e1e2c;
+  border: 1px solid #2a2a3d;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 11.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #e2e2f0;
+  pointer-events: none;
+  z-index: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+  animation: ts-tooltip-in .14s ease forwards;
+}
+@keyframes ts-tooltip-in {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 8px)) scale(.92); }
+  to   { opacity: 1; transform: translate(-50%, calc(-100% - 8px)) scale(1); }
+}
+.ts-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1e1e2c;
+}
+.ts-tooltip::before {
+  content: '';
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2a2a3d;
+  z-index: -1;
 }
 
 .chat-input-row { display: flex; gap: 6px; flex-shrink: 0; }

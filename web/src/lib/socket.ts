@@ -331,3 +331,16 @@ export function initials(name: string): string {
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   return name.slice(0, 2).toUpperCase()
 }
+
+// Consecutive messages from the same author collapse into one visual group,
+// unless the author's name changed (e.g. a username update) or more than this
+// long has passed since their previous message.
+const GROUP_WINDOW_MS = 15 * 60 * 1000
+
+export function sameGroup(prev: ChatMessage | undefined, m: ChatMessage): boolean {
+  if (!prev) return false
+  if (prev.authorId !== m.authorId) return false
+  if (prev.authorName !== m.authorName) return false
+  const gap = new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime()
+  return Number.isFinite(gap) && gap < GROUP_WINDOW_MS
+}

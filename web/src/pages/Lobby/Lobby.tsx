@@ -5,7 +5,7 @@ import { BrandLink } from '../../components/Logo'
 import { SendIcon, LeaveIcon, ChevronIcon, SettingsIcon } from '../../components/Icons'
 import { useAuth } from '../../lib/AuthContext'
 import {
-  useRoom, useLobbyPresence, initials, LOBBY_PREFIX,
+  useRoom, useLobbyPresence, initials, sameGroup, LOBBY_PREFIX,
   type Identity, type ChatMessage,
 } from '../../lib/socket'
 import { fetchChannels, type Channel } from '../../lib/channels'
@@ -39,19 +39,6 @@ function Avatar({ person, size = 36 }: { person: Identity; size?: number }) {
 function fmtTime(iso: string) {
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
-
-// Consecutive messages from the same author collapse into one visual group,
-// unless the author's name changed (e.g. a username update) or more than this
-// long has passed since their previous message.
-const GROUP_WINDOW_MS = 15 * 60 * 1000
-
-function sameGroup(prev: ChatMessage | undefined, m: ChatMessage): boolean {
-  if (!prev) return false
-  if (prev.authorId !== m.authorId) return false
-  if (prev.authorName !== m.authorName) return false
-  const gap = new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime()
-  return Number.isFinite(gap) && gap < GROUP_WINDOW_MS
 }
 
 /* ---------- main ---------- */
@@ -274,7 +261,7 @@ export default function Lobby() {
             const showTsTooltip = (e: React.MouseEvent<HTMLElement>) => {
               const rect = e.currentTarget.getBoundingClientRect()
               setTsTooltip({
-                text: new Date(m.createdAt).toLocaleString('en-US'),
+                text: new Date(m.createdAt).toLocaleString('en-US', { hour12: true }),
                 x: rect.left + rect.width / 2,
                 y: rect.top,
               })

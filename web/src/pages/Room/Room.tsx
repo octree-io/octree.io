@@ -36,62 +36,29 @@ const MONACO_LANG: Record<Lang, string> = {
   python: 'python', java: 'java', cpp: 'cpp', javascript: 'javascript',
 }
 
-const STARTER: Record<Lang, string> = {
-  python: `from typing import List
-
-class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        seen = {}
-        for i, n in enumerate(nums):
-            if target - n in seen:
-                return [seen[target - n], i]
-            seen[n] = i
-        return []
-`,
-  java: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        var map = new java.util.HashMap<Integer, Integer>();
-        for (int i = 0; i < nums.length; i++) {
-            int comp = target - nums[i];
-            if (map.containsKey(comp)) return new int[]{ map.get(comp), i };
-            map.put(nums[i], i);
-        }
-        return new int[]{};
-    }
+// Maps the client's Lang key to the language slug used in problems.starter_code.
+const STARTER_CODE_LANG: Record<Lang, string> = {
+  python: 'python3', java: 'java', cpp: 'cpp', javascript: 'javascript',
 }
-`,
-  cpp: `#include <vector>
-#include <unordered_map>
-using namespace std;
 
-class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        unordered_map<int,int> seen;
-        for (int i = 0; i < (int)nums.size(); i++) {
-            int comp = target - nums[i];
-            if (seen.count(comp)) return {seen[comp], i};
-            seen[nums[i]] = i;
-        }
-        return {};
-    }
-};
-`,
-  javascript: `/**
- * @param {number[]} nums
- * @param {number} target
- * @return {number[]}
- */
-var twoSum = function(nums, target) {
-    const seen = new Map();
-    for (let i = 0; i < nums.length; i++) {
-        const comp = target - nums[i];
-        if (seen.has(comp)) return [seen.get(comp), i];
-        seen.set(nums[i], i);
-    }
-    return [];
-};
-`,
+// Fallback stub, used only when a problem has no starter code for a language
+// (e.g. not seeded yet) — deliberately blank rather than a worked example, so
+// it never gives away a solution.
+const FALLBACK_STARTER: Record<Lang, string> = {
+  python: `class Solution:\n    def solve(self):\n        # write your solution here\n        pass\n`,
+  java: `class Solution {\n    // write your solution here\n}\n`,
+  cpp: `class Solution {\npublic:\n    // write your solution here\n};\n`,
+  javascript: `// write your solution here\n`,
+}
+
+function starterCodeFor(problem: ProblemDetail | null): Record<Lang, string> {
+  const sc = problem?.starterCode
+  return {
+    python: sc?.[STARTER_CODE_LANG.python] ?? FALLBACK_STARTER.python,
+    java: sc?.[STARTER_CODE_LANG.java] ?? FALLBACK_STARTER.java,
+    cpp: sc?.[STARTER_CODE_LANG.cpp] ?? FALLBACK_STARTER.cpp,
+    javascript: sc?.[STARTER_CODE_LANG.javascript] ?? FALLBACK_STARTER.javascript,
+  }
 }
 
 /* ---------- monaco theme ---------- */
@@ -220,7 +187,7 @@ export default function Room() {
 
   /* editor — one code buffer per language, so switching langs preserves progress */
   const [lang, setLang] = useState<Lang>('python')
-  const [codeByLang, setCodeByLang] = useState<Record<Lang, string>>(STARTER)
+  const [codeByLang, setCodeByLang] = useState<Record<Lang, string>>(FALLBACK_STARTER)
   const myCode = codeByLang[lang]
 
   /* room */
@@ -262,6 +229,12 @@ export default function Room() {
       .catch(() => { if (alive) setProblemDetail(null) })
     return () => { alive = false }
   }, [liveProblem?.slug])
+
+  // Seed each language's editor buffer with this problem's starter code
+  // whenever the round assigns a new problem.
+  useEffect(() => {
+    setCodeByLang(starterCodeFor(problemDetail))
+  }, [problemDetail])
 
   // The room was closed (host action, or auto-closed when empty) — leave.
   useEffect(() => {

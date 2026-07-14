@@ -6,6 +6,8 @@ export interface ProblemDetail {
   title: string
   description: string // HTML
   difficulty: 'easy' | 'medium' | 'hard'
+  // Per-language starter code, keyed by language slug (python3 / cpp / java / javascript).
+  starterCode: Record<string, string> | null
 }
 
 /** Fetch a problem's name + description (never the solution) by slug. */

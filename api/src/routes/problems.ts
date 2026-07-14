@@ -18,6 +18,7 @@ const PUBLIC_COLUMNS = {
   tags: true,
   isPublished: true,
   createdAt: true,
+  starterCode: true,
 } as const;
 
 // GET /problems

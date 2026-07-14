@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { BrandLink } from '../../components/Logo'
 import { SendIcon, LeaveIcon, ChevronIcon, SettingsIcon } from '../../components/Icons'
@@ -66,6 +67,7 @@ export default function Lobby() {
   // Live per-room occupancy (keyed by numeric room id) for the rooms list.
   const roomPresence = useLobbyPresence()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [tsTooltip, setTsTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
   const footRef = useRef<HTMLElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -269,14 +271,25 @@ export default function Lobby() {
             const prev = messages[i - 1]
             const grouped = sameGroup(prev, m)
             const ts = fmtTime(m.createdAt)
+            const showTsTooltip = (e: React.MouseEvent<HTMLElement>) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              setTsTooltip({
+                text: new Date(m.createdAt).toLocaleString('en-US'),
+                x: rect.left + rect.width / 2,
+                y: rect.top,
+              })
+            }
             return (
               <div key={m.id} className={`slack-msg${grouped ? ' grouped' : ''}`}>
                 <div className="slack-msg-gutter">
                   {grouped
-                    ? <>
-                        <span className="slack-msg-hovertime">{ts}</span>
-                        <span className="ts-tooltip">{new Date(m.createdAt).toLocaleString('en-US')}</span>
-                      </>
+                    ? <span
+                        className="slack-msg-hovertime"
+                        onMouseEnter={showTsTooltip}
+                        onMouseLeave={() => setTsTooltip(null)}
+                      >
+                        {ts}
+                      </span>
                     : <Avatar person={{ id: m.authorId, name: m.authorName, color: m.authorColor }} />}
                 </div>
                 <div className="slack-msg-body">
@@ -285,7 +298,13 @@ export default function Lobby() {
                       <span className="slack-msg-author" style={{ color: m.authorColor }}>
                         {m.authorName}
                       </span>
-                      <span className="slack-msg-ts">{ts}</span>
+                      <span
+                        className="slack-msg-ts"
+                        onMouseEnter={showTsTooltip}
+                        onMouseLeave={() => setTsTooltip(null)}
+                      >
+                        {ts}
+                      </span>
                     </div>
                   )}
                   <div className="slack-msg-text">{m.body}</div>
@@ -382,6 +401,13 @@ export default function Lobby() {
             navigate(`/room/${room.slug ?? room.id}`)
           }}
         />
+      )}
+
+      {tsTooltip && createPortal(
+        <div className="ts-tooltip" style={{ left: tsTooltip.x, top: tsTooltip.y }}>
+          {tsTooltip.text}
+        </div>,
+        document.body,
       )}
     </div>
   )

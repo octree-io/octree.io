@@ -210,11 +210,13 @@
 .slack-msg:hover { background: #13131b; }
 .slack-msg.grouped { padding-top: 1px; padding-bottom: 1px; }
 .slack-msg-gutter { display: flex; position: relative; align-items: center; justify-content: center; padding-top: 2px; }
-.slack-msg-gutter > .ts-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);   /* 8px gap above the timestamp */
-  left: 50%;
-  transform: translateX(-50%) scale(.92);
+/* Rendered via a React portal into document.body (see Lobby.tsx), so it's
+   positioned with viewport coordinates and escapes the message list's
+   scroll clipping — letting it show centered over the sidebar instead of
+   being cut off at the edge of the scroll container. */
+.ts-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));  /* centered above the timestamp, 8px gap */
   background: #1e1e2c;
   border: 1px solid #2a2a3d;
   border-radius: 6px;
@@ -224,25 +226,24 @@
   white-space: nowrap;
   color: #e2e2f0;
   pointer-events: none;
-  opacity: 0;
   z-index: 500;
   box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
-  transition: opacity .14s ease, transform .14s ease;
+  animation: ts-tooltip-in .14s ease forwards;
+}
+@keyframes ts-tooltip-in {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 8px)) scale(.92); }
+  to   { opacity: 1; transform: translate(-50%, calc(-100% - 8px)) scale(1); }
 }
 .slack-msg-hovertime {
   font-size: 10px;
   color: #5c5c72;
   opacity: 0;
   transition: opacity .1s ease;
+  cursor: default;
 }
 .slack-msg:hover .slack-msg-hovertime { opacity: 1; }
-.slack-msg-hovertime:hover + .ts-tooltip,
-.slack-msg-hovertime:focus + .ts-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-}
-/* ── bottom arrow ── */
-.slack-msg-gutter > .ts-tooltip::after {
+/* ── bottom arrow, centered on the timestamp ── */
+.ts-tooltip::after {
   content: '';
   position: absolute;
   top: 100%;
@@ -253,7 +254,7 @@
 }
 
 /* ── border trick: overlay a second arrow 1px higher to mask the gap ── */
-.slack-msg-gutter > .ts-tooltip::before {
+.ts-tooltip::before {
   content: '';
   position: absolute;
   top: calc(100% - 1px);

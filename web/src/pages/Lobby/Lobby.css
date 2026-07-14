@@ -266,7 +266,7 @@
 }
 .slack-msg-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; }
 .slack-msg-author { font-size: 14px; font-weight: 700; }
-.slack-msg-ts { font-size: 11px; color: #5c5c72; }
+.slack-msg-ts { font-size: 11px; color: #5c5c72; cursor: default; }
 .slack-msg-text { font-size: 14px; line-height: 1.46; color: #d2d2e2; word-break: break-word; }
 
 /* ── avatar ── */

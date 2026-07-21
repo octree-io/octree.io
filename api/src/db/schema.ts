@@ -84,6 +84,30 @@ export const problems = pgTable("problems", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ─── Test cases ──────────────────────────────────────────────────────────────
+
+// Judge cases for a problem, imported from the LeetCode dataset's
+// `input_output` field. `input`/`expectedOutput` are the raw Python-call-style
+// strings from that field (e.g. `nums = [2,7,11,15], target = 9` /
+// `[0, 1]`), not Judge0 stdin/stdout — a harness renders these into runnable
+// source before dispatching to Judge0.
+export const testCases = pgTable(
+  "test_cases",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    problemId: integer("problem_id")
+      .notNull()
+      .references(() => problems.id, { onDelete: "cascade" }),
+    ordinal: integer("ordinal").notNull(), // position within the problem's input_output array
+    input: text("input").notNull(),
+    expectedOutput: text("expected_output").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    problemIdx: index("test_cases_problem_idx").on(t.problemId),
+  }),
+);
+
 // ─── Rooms ───────────────────────────────────────────────────────────────────
 
 export const rooms = pgTable("rooms", {
@@ -206,6 +230,11 @@ export const roomParticipantsRelations = relations(roomParticipants, ({ one }) =
 export const problemsRelations = relations(problems, ({ many }) => ({
   rooms: many(rooms),
   submissions: many(submissions),
+  testCases: many(testCases),
+}));
+
+export const testCasesRelations = relations(testCases, ({ one }) => ({
+  problem: one(problems, { fields: [testCases.problemId], references: [problems.id] }),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({

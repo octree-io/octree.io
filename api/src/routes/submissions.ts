@@ -6,17 +6,54 @@ import { submissions } from "../db/schema.js";
 import { enqueueSubmission } from "../queue/submissions.js";
 import { ApiError } from "../middleware/error.js";
 
+type SubmissionRow = typeof submissions.$inferSelect;
+
+// "submit" grades against the full hidden test suite, so its expected/actual
+// output must never reach the client — otherwise anyone can read the answers
+// straight out of the network tab. "run" only samples a few cases for
+// debugging, so its full output is fine to show. Redact server-side (not just
+// in the UI) since API responses are trivially inspectable.
+//
+// `stdout` (whatever the solution itself printed) is kept in both modes: it's
+// never the expected/hidden answer — that value is only compared afterward in
+// the worker, never injected into the generated program — so showing it back
+// can't leak anything the user's own code didn't already choose to print.
+function redactForClient(sub: SubmissionRow): SubmissionRow {
+  if (sub.mode !== "submit" || !sub.results) return sub;
+  return {
+    ...sub,
+    results: sub.results.map(({ ordinal, input, passed, runtimeMs, error, stdout }) => ({
+      ordinal,
+      input,
+      passed,
+      runtimeMs,
+      error,
+      stdout,
+      expected: "",
+      got: "",
+    })),
+  };
+}
+
 export const submissionsRouter = Router();
 
-const createSubmissionSchema = z.object({
-  languageId: z.number().int().positive(),
-  sourceCode: z.string().min(1).max(100_000),
-  stdin: z.string().max(100_000).optional(),
-  expectedOutput: z.string().max(100_000).optional(),
-  userId: z.number().int().positive().optional(),
-  problemId: z.number().int().positive().optional(),
-  roomId: z.number().int().positive().optional(),
-});
+const createSubmissionSchema = z
+  .object({
+    languageId: z.number().int().positive(),
+    sourceCode: z.string().min(1).max(100_000),
+    stdin: z.string().max(100_000).optional(),
+    expectedOutput: z.string().max(100_000).optional(),
+    // "run" grades against a sample of the problem's test cases, "submit"
+    // against all of them. Both require a problemId to know what to grade.
+    mode: z.enum(["run", "submit"]).optional(),
+    userId: z.number().int().positive().optional(),
+    problemId: z.number().int().positive().optional(),
+    roomId: z.number().int().positive().optional(),
+  })
+  .refine((d) => !d.mode || d.problemId, {
+    message: "problemId is required when mode is set",
+    path: ["problemId"],
+  });
 
 // POST /submissions — persist, enqueue, and return immediately (202).
 submissionsRouter.post("/", async (req, res, next) => {
@@ -58,7 +95,7 @@ submissionsRouter.get("/:id", async (req, res, next) => {
       where: eq(submissions.id, id),
     });
     if (!submission) throw new ApiError(404, "Submission not found");
-    res.json(submission);
+    res.json(redactForClient(submission));
   } catch (err) {
     next(err);
   }

@@ -26,6 +26,8 @@ export async function enqueueSubmission(submissionId: number): Promise<void> {
   await submissionsQueue.add(
     "execute",
     { submissionId },
-    { jobId: String(submissionId) }, // BullMQ job ids must be strings
+    // Keyed by submission id for idempotency. Prefixed because BullMQ rejects
+    // job ids that are bare integers (numeric strings).
+    { jobId: `submission-${submissionId}` },
   );
 }

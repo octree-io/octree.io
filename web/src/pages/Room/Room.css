@@ -590,6 +590,27 @@
   font-family: var(--mono);
 }
 
+.run-panel-error {
+  padding: 12px 14px;
+}
+.run-error-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f87171;
+  margin-bottom: 6px;
+}
+.run-error-body {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #fca5a5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow: auto;
+}
+
 .results-header {
   display: flex;
   align-items: center;
@@ -604,6 +625,8 @@
 
 .results-cases { display: flex; flex-direction: column; padding: 0 10px 10px; gap: 3px; }
 
+.result-case-wrap { border-radius: 7px; background: var(--surface2); }
+
 .result-case {
   display: flex;
   align-items: center;
@@ -612,6 +635,17 @@
   border-radius: 7px;
   font-size: 0.79rem;
   background: var(--surface2);
+  width: 100%;
+  border: none;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+}
+button.result-case {
+  cursor: pointer;
+}
+button.result-case:hover {
+  filter: brightness(1.12);
 }
 .result-pass { border-left: 3px solid var(--green); }
 .result-fail { border-left: 3px solid var(--red);   }
@@ -625,6 +659,36 @@
 .result-diff  { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
 .result-diff code { font-family: var(--mono); color: var(--red); font-size: 0.73rem; }
 .result-ms    { font-family: var(--mono); font-size: 0.71rem; color: var(--muted); flex-shrink: 0; }
+
+.result-chevron {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+  color: var(--muted);
+}
+.result-case-wrap.expanded .result-chevron { transform: rotate(180deg); }
+
+.result-stdout {
+  padding: 8px 12px 10px 32px;
+  border-top: 1px solid var(--border);
+}
+.result-stdout pre {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow: auto;
+}
+.result-stdout-empty {
+  font-size: 0.73rem;
+  color: var(--muted);
+  font-style: italic;
+}
 
 /* ---------- sidebar ---------- */
 .room-sidebar {

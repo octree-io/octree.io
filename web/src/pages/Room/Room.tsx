@@ -9,6 +9,7 @@ import {
 } from '../../components/Icons'
 import { useRoom, initials as toInitials, sameGroup, type ChatMessage } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
+import { runSolution, type Submission } from '../../lib/submissions'
 import './Room.css'
 
 /* ---------- types ---------- */
@@ -22,6 +23,7 @@ interface TestResult {
   got: string
   passed: boolean
   runtimeMs: number
+  stdout: string
 }
 
 /* ---------- constants ---------- */
@@ -198,6 +200,13 @@ export default function Room() {
   const [runLoading,    setRunLoading]    = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [results,       setResults]       = useState<TestResult[] | null>(null)
+  // "run" only samples a few cases and is meant for debugging, so its
+  // expected/actual output is shown; "submit" grades the full hidden suite, so
+  // that detail is withheld (the API itself redacts it — this just decides
+  // whether the UI attempts to render it).
+  const [resultsMode,   setResultsMode]   = useState<'run' | 'submit' | null>(null)
+  const [expandedCase,  setExpandedCase]  = useState<number | null>(null)
+  const [runError,      setRunError]      = useState<string | null>(null)
   const [submitted,     setSubmitted]     = useState(false)
   const [tsTooltip,     setTsTooltip]     = useState<{ text: string; x: number; y: number } | null>(null)
 
@@ -300,6 +309,9 @@ export default function Room() {
   /* a new round means a fresh problem — clear stale run results */
   useEffect(() => {
     setResults(null)
+    setResultsMode(null)
+    setExpandedCase(null)
+    setRunError(null)
     setSubmitted(false)
   }, [round?.number])
 
@@ -323,37 +335,64 @@ export default function Room() {
   function switchLang(l: Lang) {
     setLang(l)
     setResults(null)
+    setResultsMode(null)
+    setExpandedCase(null)
+    setRunError(null)
   }
 
   function updateMyCode(v: string) {
     setCodeByLang(prev => ({ ...prev, [lang]: v }))
   }
 
-  async function handleRun() {
-    setRunLoading(true)
-    setResults(null)
-    await new Promise(r => setTimeout(r, 1100))
-    setResults([
-      { index: 1, input: 'nums=[2,7,11,15], target=9', expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 8 },
-      { index: 2, input: 'nums=[3,2,4], target=6',     expected: '[1,2]', got: '[1,2]', passed: true,  runtimeMs: 4 },
-      { index: 3, input: 'nums=[3,3], target=6',       expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 3 },
-    ])
-    setRunLoading(false)
+  // Map a completed submission into the console's per-case view. A build/compile
+  // error (no case produced output) is surfaced as a single error banner.
+  function applySubmission(sub: Submission): boolean {
+    const cases = sub.results ?? []
+    const ranAnyCase = cases.some(r => r.error === null || r.got !== '')
+    if (sub.status === 'failed' || (sub.error && !ranAnyCase)) {
+      setResults(null)
+      setRunError(sub.error ?? sub.judge0StatusDescription ?? 'Execution failed')
+      return false
+    }
+    setRunError(null)
+    setExpandedCase(null)
+    setResults(cases.map((r, i) => ({
+      index: i + 1,
+      input: r.input,
+      expected: r.expected,
+      got: r.got || (r.error ?? ''),
+      passed: r.passed,
+      runtimeMs: Math.round(r.runtimeMs),
+      stdout: r.stdout,
+    })))
+    return cases.length > 0 && cases.every(r => r.passed)
   }
 
-  async function handleSubmit() {
-    setSubmitLoading(true)
-    await new Promise(r => setTimeout(r, 1400))
-    setResults([
-      { index: 1, input: 'nums=[2,7,11,15], target=9', expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 8 },
-      { index: 2, input: 'nums=[3,2,4], target=6',     expected: '[1,2]', got: '[1,2]', passed: true,  runtimeMs: 4 },
-      { index: 3, input: 'nums=[3,3], target=6',       expected: '[0,1]', got: '[0,1]', passed: true,  runtimeMs: 3 },
-      { index: 4, input: 'nums=[1,2,3,4], target=7',   expected: '[2,3]', got: '[2,3]', passed: true,  runtimeMs: 6 },
-      { index: 5, input: 'nums=[0,4,3,0], target=0',   expected: '[0,3]', got: '[0,3]', passed: true,  runtimeMs: 5 },
-    ])
-    setSubmitted(true)
-    setSubmitLoading(false)
+  async function grade(mode: 'run' | 'submit') {
+    const problemId = liveProblem?.id
+    if (!problemId) {
+      setRunError('No active problem to run against yet.')
+      setResults(null)
+      return
+    }
+    const setLoading = mode === 'run' ? setRunLoading : setSubmitLoading
+    setLoading(true)
+    setResults(null)
+    setResultsMode(mode)
+    setRunError(null)
+    try {
+      const sub = await runSolution({ problemId, lang, sourceCode: myCode, mode })
+      const allPassed = applySubmission(sub)
+      if (mode === 'submit' && allPassed) setSubmitted(true)
+    } catch (err) {
+      setRunError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const handleRun = () => grade('run')
+  const handleSubmit = () => grade('submit')
 
   function sendMessage() {
     const text = chatInput.trim()
@@ -566,6 +605,11 @@ export default function Room() {
             <div className="run-panel-body">
               {runLoading || submitLoading ? (
                 <div className="run-panel-empty">{submitLoading ? 'Submitting…' : 'Running against test cases…'}</div>
+              ) : runError ? (
+                <div className="run-panel-error">
+                  <div className="run-error-title">Couldn’t run your code</div>
+                  <pre className="run-error-body">{runError}</pre>
+                </div>
               ) : results ? (
                 <>
                   <div className="results-header">
@@ -577,19 +621,56 @@ export default function Room() {
                     </span>
                   </div>
                   <div className="results-cases">
-                    {results.map(r => (
-                      <div key={r.index} className={`result-case${r.passed ? ' result-pass' : ' result-fail'}`}>
-                        <span className="result-icon">{r.passed ? <CheckIcon /> : <XIcon />}</span>
-                        <span className="result-label">Case {r.index}</span>
-                        <span className="result-input">{r.input}</span>
-                        {!r.passed && (
-                          <span className="result-diff">
-                            expected <code>{r.expected}</code> got <code>{r.got}</code>
-                          </span>
-                        )}
-                        <span className="result-ms">{r.runtimeMs}ms</span>
-                      </div>
-                    ))}
+                    {results.map(r => {
+                      // Expanding to see stdout is a debugging aid for "run" only —
+                      // "submit" grades the hidden suite and must show nothing
+                      // beyond input/pass-fail/runtime, with no expand affordance.
+                      const expandable = resultsMode === 'run'
+                      const isOpen = expandable && expandedCase === r.index
+                      const rowContent = (
+                        <>
+                          <span className="result-icon">{r.passed ? <CheckIcon /> : <XIcon />}</span>
+                          <span className="result-label">Case {r.index}</span>
+                          <span className="result-input">{r.input}</span>
+                          {!r.passed && resultsMode === 'run' && (
+                            <span className="result-diff">
+                              expected <code>{r.expected}</code> got <code>{r.got}</code>
+                            </span>
+                          )}
+                          <span className="result-ms">{r.runtimeMs}ms</span>
+                          {expandable && (
+                            <svg className="result-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          )}
+                        </>
+                      )
+                      return (
+                        <div key={r.index} className={`result-case-wrap${isOpen ? ' expanded' : ''}`}>
+                          {expandable ? (
+                            <button
+                              type="button"
+                              className={`result-case${r.passed ? ' result-pass' : ' result-fail'}`}
+                              onClick={() => setExpandedCase(isOpen ? null : r.index)}
+                              aria-expanded={isOpen}
+                            >
+                              {rowContent}
+                            </button>
+                          ) : (
+                            <div className={`result-case${r.passed ? ' result-pass' : ' result-fail'}`}>
+                              {rowContent}
+                            </div>
+                          )}
+                          {isOpen && (
+                            <div className="result-stdout">
+                              {r.stdout
+                                ? <pre>{r.stdout}</pre>
+                                : <span className="result-stdout-empty">No output printed</span>}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </>
               ) : (

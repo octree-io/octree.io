@@ -179,6 +179,18 @@ export const chatMessages = pgTable(
 
 // ─── Submissions ──────────────────────────────────────────────────────────────
 
+// One graded test case within a submission's `results` array.
+export interface SubmissionCaseResult {
+  ordinal: number;
+  input: string;
+  expected: string;
+  got: string;
+  passed: boolean;
+  runtimeMs: number;
+  error: string | null;
+  stdout: string;
+}
+
 export const submissions = pgTable("submissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
@@ -194,6 +206,10 @@ export const submissions = pgTable("submissions", {
   stdin: text("stdin"),
   expectedOutput: text("expected_output"),
 
+  // How to grade. "run" executes against a sample of the problem's test cases,
+  // "submit" against all of them; null is a raw single-shot run (source+stdin).
+  mode: text("mode").$type<"run" | "submit">(),
+
   // Pipeline state.
   status: submissionStatusEnum("status").notNull().default("queued"),
   error: text("error"), // populated when status = "failed"
@@ -208,6 +224,12 @@ export const submissions = pgTable("submissions", {
   message: text("message"),
   time: text("time"), // seconds, as returned by Judge0
   memory: integer("memory"), // kilobytes
+
+  // Per-test-case grading results (mode = "run" | "submit"). Shape mirrors the
+  // worker's GradedCase: { ordinal, input, expected, got, passed, runtimeMs, error }.
+  results: jsonb("results").$type<SubmissionCaseResult[]>(),
+  testsPassed: integer("tests_passed"),
+  testsTotal: integer("tests_total"),
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

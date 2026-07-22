@@ -1,8 +1,20 @@
-import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, pgEnum, jsonb } from "drizzle-orm/pg-core";
 
-// The API owns the canonical schema and migrations. The worker only reads and
-// updates the `submissions` table, so it declares just that table (columns must
-// stay in sync with api/src/db/schema.ts) — no foreign keys or relations needed.
+// The API owns the canonical schema and migrations. The worker only reads
+// problems/test_cases and reads+updates submissions, so it declares just those
+// tables (columns must stay in sync with api/src/db/schema.ts) — no foreign
+// keys or relations needed.
+
+export interface SubmissionCaseResult {
+  ordinal: number;
+  input: string;
+  expected: string;
+  got: string;
+  passed: boolean;
+  runtimeMs: number;
+  error: string | null;
+  stdout: string;
+}
 
 export const submissionStatusEnum = pgEnum("submission_status", [
   "queued",
@@ -22,6 +34,7 @@ export const submissions = pgTable("submissions", {
   sourceCode: text("source_code").notNull(),
   stdin: text("stdin"),
   expectedOutput: text("expected_output"),
+  mode: text("mode").$type<"run" | "submit">(),
 
   status: submissionStatusEnum("status").notNull().default("queued"),
   error: text("error"),
@@ -36,7 +49,26 @@ export const submissions = pgTable("submissions", {
   time: text("time"),
   memory: integer("memory"),
 
+  results: jsonb("results").$type<SubmissionCaseResult[]>(),
+  testsPassed: integer("tests_passed"),
+  testsTotal: integer("tests_total"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   finishedAt: timestamp("finished_at"),
+});
+
+// Read-only for the worker: needed to build the test-case harness.
+export const problems = pgTable("problems", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  slug: text("slug").notNull(),
+  starterCode: jsonb("starter_code").$type<Record<string, string>>(),
+});
+
+export const testCases = pgTable("test_cases", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  problemId: integer("problem_id").notNull(),
+  ordinal: integer("ordinal").notNull(),
+  input: text("input").notNull(),
+  expectedOutput: text("expected_output").notNull(),
 });

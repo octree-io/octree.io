@@ -140,7 +140,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     raise SystemExit("DATABASE_URL not set (checked env, api/.env, api/.env.local)")
 
-JUDGE0_URL = os.environ.get("JUDGE0_URL", "http://94.130.34.33:2358").rstrip("/")
+JUDGE0_URL = os.environ.get("JUDGE0_URL", "http://localhost:2358").rstrip("/")
 JUDGE0_AUTH_TOKEN = os.environ.get("JUDGE0_AUTH_TOKEN")
 PYTHON_LANGUAGE_ID = int(os.environ.get("JUDGE0_PYTHON_ID", "71"))  # Python 3.8
 

@@ -24,6 +24,7 @@ interface TestResult {
   passed: boolean
   runtimeMs: number
   stdout: string
+  error: string | null
 }
 
 /* ---------- constants ---------- */
@@ -360,10 +361,11 @@ export default function Room() {
       index: i + 1,
       input: r.input,
       expected: r.expected,
-      got: r.got || (r.error ?? ''),
+      got: r.got,
       passed: r.passed,
       runtimeMs: Math.round(r.runtimeMs),
       stdout: r.stdout,
+      error: r.error,
     })))
     return cases.length > 0 && cases.every(r => r.passed)
   }
@@ -565,7 +567,7 @@ export default function Room() {
               options={{
                 fontSize: 13,
                 fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                fontLigatures: true,
+                fontLigatures: false,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 lineNumbers: 'on',
@@ -579,6 +581,14 @@ export default function Room() {
                 overviewRulerBorder: false,
                 hideCursorInOverviewRuler: true,
                 scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 5 },
+                // Don't pop up suggestions just from typing — only when the
+                // user explicitly asks for them (Ctrl+Space).
+                quickSuggestions: false,
+                suggestOnTriggerCharacters: false,
+                acceptSuggestionOnEnter: 'off',
+                wordBasedSuggestions: 'off',
+                parameterHints: { enabled: false },
+                tabCompletion: 'off',
               }}
             />
           </div>
@@ -632,9 +642,14 @@ export default function Room() {
                           <span className="result-icon">{r.passed ? <CheckIcon /> : <XIcon />}</span>
                           <span className="result-label">Case {r.index}</span>
                           <span className="result-input">{r.input}</span>
-                          {!r.passed && resultsMode === 'run' && (
+                          {!r.passed && !r.error && resultsMode === 'run' && (
                             <span className="result-diff">
                               expected <code>{r.expected}</code> got <code>{r.got}</code>
+                            </span>
+                          )}
+                          {!r.passed && r.error && (
+                            <span className="result-error-tag">
+                              {expandable ? 'error — click to expand' : 'error'}
                             </span>
                           )}
                           <span className="result-ms">{r.runtimeMs}ms</span>
@@ -663,9 +678,21 @@ export default function Room() {
                           )}
                           {isOpen && (
                             <div className="result-stdout">
-                              {r.stdout
-                                ? <pre>{r.stdout}</pre>
-                                : <span className="result-stdout-empty">No output printed</span>}
+                              {r.error && (
+                                <>
+                                  <div className="result-stdout-label result-error-label">error</div>
+                                  <pre className="result-error-pre">{r.error}</pre>
+                                </>
+                              )}
+                              {r.stdout && (
+                                <>
+                                  {r.error && <div className="result-stdout-label">stdout</div>}
+                                  <pre>{r.stdout}</pre>
+                                </>
+                              )}
+                              {!r.error && !r.stdout && (
+                                <span className="result-stdout-empty">No output printed</span>
+                              )}
                             </div>
                           )}
                         </div>

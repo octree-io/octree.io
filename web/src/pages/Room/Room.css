@@ -655,9 +655,25 @@ button.result-case:hover {
 .result-fail .result-icon { color: var(--red);   }
 
 .result-label { font-family: var(--mono); font-size: 0.73rem; color: var(--muted); flex-shrink: 0; min-width: 48px; }
-.result-input { color: var(--muted); font-family: var(--mono); font-size: 0.73rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.result-diff  { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+.result-input { color: var(--muted); font-family: var(--mono); font-size: 0.73rem; flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result-diff  {
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .result-diff code { font-family: var(--mono); color: var(--red); font-size: 0.73rem; }
+.result-error-tag {
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  color: var(--red);
+  flex-shrink: 0;
+  font-style: italic;
+}
 .result-ms    { font-family: var(--mono); font-size: 0.71rem; color: var(--muted); flex-shrink: 0; }
 
 .result-chevron {
@@ -688,6 +704,23 @@ button.result-case:hover {
   font-size: 0.73rem;
   color: var(--muted);
   font-style: italic;
+}
+.result-stdout-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 6px 0 4px;
+}
+.result-stdout-label:first-child { margin-top: 0; }
+.result-error-label { color: #f87171; }
+.result-stdout .result-error-pre {
+  margin: 0 0 6px;
+  color: #fca5a5;
+  max-height: 160px;
+  overflow: auto;
 }
 
 /* ---------- sidebar ---------- */

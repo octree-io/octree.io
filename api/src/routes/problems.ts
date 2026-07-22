@@ -5,6 +5,7 @@ import { db } from "../db/index.js";
 import { problems } from "../db/schema.js";
 import { ApiError } from "../middleware/error.js";
 import { humanizeTitle } from "../lib/humanizeTitle.js";
+import { extractParamNames } from "../lib/paramNames.js";
 
 export const problemsRouter = Router();
 
@@ -43,7 +44,12 @@ problemsRouter.get("/:slug", async (req, res, next) => {
       columns: PUBLIC_COLUMNS,
     });
     if (!problem) throw new ApiError(404, "Problem not found");
-    res.json({ ...problem, title: humanizeTitle(problem.title) });
+    const sc = problem.starterCode;
+    // Param names for building the custom-test-case input form. Best-effort —
+    // an empty array just means that UI can't offer per-param fields.
+    const paramNames =
+      sc?.python3 && sc?.signature ? extractParamNames(sc.python3, sc.signature) : [];
+    res.json({ ...problem, title: humanizeTitle(problem.title), paramNames });
   } catch (err) {
     next(err);
   }

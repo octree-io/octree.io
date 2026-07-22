@@ -44,8 +44,12 @@ const createSubmissionSchema = z
     stdin: z.string().max(100_000).optional(),
     expectedOutput: z.string().max(100_000).optional(),
     // "run" grades against a sample of the problem's test cases, "submit"
-    // against all of them. Both require a problemId to know what to grade.
-    mode: z.enum(["run", "submit"]).optional(),
+    // against all of them, "custom" against user-supplied ad-hoc inputs (see
+    // customInputs). All three require a problemId to know what to grade.
+    mode: z.enum(["run", "submit", "custom"]).optional(),
+    // "custom" mode only: one Python-literal-style input string per ad-hoc
+    // test case, e.g. "nums = [3, 3], target = 6".
+    customInputs: z.array(z.string().min(1).max(2_000)).min(1).max(20).optional(),
     userId: z.number().int().positive().optional(),
     problemId: z.number().int().positive().optional(),
     roomId: z.number().int().positive().optional(),
@@ -53,6 +57,10 @@ const createSubmissionSchema = z
   .refine((d) => !d.mode || d.problemId, {
     message: "problemId is required when mode is set",
     path: ["problemId"],
+  })
+  .refine((d) => d.mode !== "custom" || (d.customInputs && d.customInputs.length > 0), {
+    message: "customInputs is required when mode is \"custom\"",
+    path: ["customInputs"],
   });
 
 // POST /submissions — persist, enqueue, and return immediately (202).

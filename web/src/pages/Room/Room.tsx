@@ -5,7 +5,7 @@ import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
 import {
   SendIcon, PlayIcon, UploadIcon, LeaveIcon,
-  CheckIcon, XIcon,
+  CheckIcon, XIcon, PlusIcon,
 } from '../../components/Icons'
 import { useRoom, initials as toInitials, sameGroup, type ChatMessage } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
@@ -22,6 +22,19 @@ interface TestResult {
   expected: string
   got: string
   passed: boolean
+  runtimeMs: number
+  stdout: string
+  error: string | null
+}
+
+// Custom test cases have no known expected output — "passed" here just means
+// "ran without error", and the actual output is always shown (there's nothing
+// hidden to protect: the user chose these inputs themselves).
+interface CustomCaseResult {
+  id: string
+  input: string
+  ok: boolean
+  got: string
   runtimeMs: number
   stdout: string
   error: string | null
@@ -211,6 +224,17 @@ export default function Room() {
   const [submitted,     setSubmitted]     = useState(false)
   const [tsTooltip,     setTsTooltip]     = useState<{ text: string; x: number; y: number } | null>(null)
 
+  /* console tabs: the graded run/submit output, or the custom-test-case builder */
+  const [consoleTab, setConsoleTab] = useState<'console' | 'custom'>('console')
+
+  /* custom test cases — ad-hoc inputs the user builds per-parameter and runs
+     against their current code. Never graded (no known expected output). */
+  const [customCases,   setCustomCases]   = useState<{ id: string; values: string[] }[]>([])
+  const [customResults, setCustomResults] = useState<CustomCaseResult[] | null>(null)
+  const [customLoading, setCustomLoading] = useState(false)
+  const [customError,   setCustomError]   = useState<string | null>(null)
+  const [expandedCustom, setExpandedCustom] = useState<string | null>(null)
+
   // realtime: anonymous presence + chat, plus the live problem & round timer
   const {
     messages,
@@ -247,6 +271,16 @@ export default function Room() {
   useEffect(() => {
     setCodeByLang(starterCodeFor(problemDetail))
   }, [problemDetail])
+
+  const paramNames = problemDetail?.paramNames ?? []
+
+  // A new problem means old custom test cases don't apply anymore.
+  useEffect(() => {
+    setCustomCases([])
+    setCustomResults(null)
+    setCustomError(null)
+    setExpandedCustom(null)
+  }, [problemDetail?.id])
 
   // The room was closed (host action, or auto-closed when empty) — leave.
   useEffect(() => {
@@ -339,6 +373,11 @@ export default function Room() {
     setResultsMode(null)
     setExpandedCase(null)
     setRunError(null)
+    // custom test case *definitions* are language-independent; only their
+    // last run's results (which were produced by the previous language) go stale.
+    setCustomResults(null)
+    setCustomError(null)
+    setExpandedCustom(null)
   }
 
   function updateMyCode(v: string) {
@@ -395,6 +434,62 @@ export default function Room() {
 
   const handleRun = () => grade('run')
   const handleSubmit = () => grade('submit')
+
+  function addCustomCase() {
+    setCustomCases(cs => [...cs, { id: crypto.randomUUID(), values: paramNames.map(() => '') }])
+  }
+
+  function removeCustomCase(id: string) {
+    setCustomCases(cs => cs.filter(c => c.id !== id))
+    setExpandedCustom(e => (e === id ? null : e))
+  }
+
+  function updateCustomValue(id: string, i: number, value: string) {
+    setCustomCases(cs => cs.map(c => (c.id === id ? { ...c, values: c.values.map((v, j) => (j === i ? value : v)) } : c)))
+  }
+
+  async function runCustomTests() {
+    const problemId = liveProblem?.id
+    if (!problemId) {
+      setCustomError('No active problem to run against yet.')
+      return
+    }
+    if (customCases.length === 0) {
+      setCustomError('Add at least one test case first.')
+      return
+    }
+    setCustomLoading(true)
+    setCustomError(null)
+    setExpandedCustom(null)
+    try {
+      // Build "name = literal, name2 = literal2" strings — the same
+      // Python-literal-style format the stored test cases already use, so it
+      // reuses the harness's existing input parser unchanged.
+      const inputs = customCases.map(c =>
+        paramNames.map((name, i) => `${name} = ${c.values[i]?.trim() || 'None'}`).join(', '),
+      )
+      const sub = await runSolution({ problemId, lang, sourceCode: myCode, mode: 'custom', customInputs: inputs })
+      if (sub.status === 'failed' && !sub.results?.length) {
+        setCustomResults(null)
+        setCustomError(sub.error ?? sub.judge0StatusDescription ?? 'Execution failed')
+        return
+      }
+      setCustomResults((sub.results ?? []).map((r, i) => ({
+        id: customCases[i]?.id ?? String(i),
+        input: r.input,
+        ok: r.passed,
+        got: r.got,
+        runtimeMs: Math.round(r.runtimeMs),
+        stdout: r.stdout,
+        error: r.error,
+      })))
+    } catch (err) {
+      setCustomResults(null)
+      setCustomError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setCustomLoading(false)
+    }
+  }
 
   function sendMessage() {
     const text = chatInput.trim()
@@ -596,9 +691,25 @@ export default function Room() {
           {/* run panel — always visible; hosts run/submit and their output */}
           <div className="run-panel">
             <div className="run-panel-header">
-              <span className="run-panel-title">Console</span>
-              {submitted && <span className="submit-badge">✓ submitted</span>}
-              <div className="run-panel-actions">
+              <div className="run-panel-tabs">
+                <button
+                  type="button"
+                  className={`run-panel-tab${consoleTab === 'console' ? ' active' : ''}`}
+                  onClick={() => setConsoleTab('console')}
+                >
+                  Console
+                </button>
+                <button
+                  type="button"
+                  className={`run-panel-tab${consoleTab === 'custom' ? ' active' : ''}`}
+                  onClick={() => setConsoleTab('custom')}
+                >
+                  Custom Tests
+                </button>
+              </div>
+              {consoleTab === 'console' && submitted && <span className="submit-badge">✓ submitted</span>}
+              {consoleTab === 'console' ? (
+                <div className="run-panel-actions">
                   <button className="btn-run" onClick={handleRun} disabled={runLoading || submitLoading}>
                     <PlayIcon />{runLoading ? 'Running…' : 'Run'}
                   </button>
@@ -610,10 +721,118 @@ export default function Room() {
                     <UploadIcon />{submitLoading ? 'Submitting…' : 'Submit'}
                   </button>
                 </div>
+              ) : (
+                <div className="run-panel-actions">
+                  <button type="button" className="btn-run" onClick={addCustomCase} disabled={paramNames.length === 0}>
+                    <PlusIcon />Add case
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-submit-code btn-primary"
+                    onClick={runCustomTests}
+                    disabled={customLoading || customCases.length === 0}
+                  >
+                    <PlayIcon />{customLoading ? 'Running…' : 'Run custom tests'}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="run-panel-body">
-              {runLoading || submitLoading ? (
+              {consoleTab === 'custom' ? (
+                customLoading ? (
+                  <div className="run-panel-empty">Running custom tests…</div>
+                ) : paramNames.length === 0 ? (
+                  <div className="run-panel-empty">
+                    This problem's parameters couldn't be detected — custom tests aren't available.
+                  </div>
+                ) : (
+                  <>
+                    <div className="custom-cases">
+                      {customCases.length === 0 && (
+                        <div className="run-panel-empty">Add a test case to try your code against custom inputs.</div>
+                      )}
+                      {customCases.map((c, idx) => {
+                        const result = customResults?.find(r => r.id === c.id)
+                        const isOpen = expandedCustom === c.id
+                        return (
+                          <div key={c.id} className="custom-case">
+                            <div className="custom-case-row">
+                              <span className="custom-case-index">#{idx + 1}</span>
+                              <div className="custom-case-fields">
+                                {paramNames.map((name, i) => (
+                                  <label key={name} className="custom-case-field">
+                                    <span className="custom-case-label">{name}</span>
+                                    <input
+                                      className="custom-case-input"
+                                      value={c.values[i] ?? ''}
+                                      onChange={e => updateCustomValue(c.id, i, e.target.value)}
+                                      placeholder="e.g. [1,2,3]"
+                                      spellCheck={false}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <button
+                                type="button"
+                                className="custom-case-remove"
+                                onClick={() => removeCustomCase(c.id)}
+                                aria-label="Remove test case"
+                              >
+                                <XIcon />
+                              </button>
+                            </div>
+                            {result && (
+                              <>
+                                <button
+                                  type="button"
+                                  className={`custom-case-result${result.ok ? ' ok' : ' err'}`}
+                                  onClick={() => setExpandedCustom(isOpen ? null : c.id)}
+                                  aria-expanded={isOpen}
+                                >
+                                  <span className="result-icon">{result.ok ? <CheckIcon /> : <XIcon />}</span>
+                                  <span className="result-input">
+                                    {result.ok ? <>output: <code>{result.got}</code></> : 'runtime error'}
+                                  </span>
+                                  <span className="result-ms">{result.runtimeMs}ms</span>
+                                  <svg className="result-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <polyline points="6 9 12 15 18 9" />
+                                  </svg>
+                                </button>
+                                {isOpen && (
+                                  <div className="result-stdout">
+                                    {result.error && (
+                                      <>
+                                        <div className="result-stdout-label result-error-label">error</div>
+                                        <pre className="result-error-pre">{result.error}</pre>
+                                      </>
+                                    )}
+                                    {result.stdout && (
+                                      <>
+                                        {result.error && <div className="result-stdout-label">stdout</div>}
+                                        <pre>{result.stdout}</pre>
+                                      </>
+                                    )}
+                                    {!result.error && !result.stdout && (
+                                      <span className="result-stdout-empty">No output printed</span>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {customError && (
+                      <div className="run-panel-error">
+                        <div className="run-error-title">Couldn’t run your code</div>
+                        <pre className="run-error-body">{customError}</pre>
+                      </div>
+                    )}
+                  </>
+                )
+              ) : runLoading || submitLoading ? (
                 <div className="run-panel-empty">{submitLoading ? 'Submitting…' : 'Running against test cases…'}</div>
               ) : runError ? (
                 <div className="run-panel-error">

@@ -8,6 +8,10 @@ export interface ProblemDetail {
   difficulty: 'easy' | 'medium' | 'hard'
   // Per-language starter code, keyed by language slug (python3 / cpp / java / javascript).
   starterCode: Record<string, string> | null
+  // Parameter names for the problem's method signature, e.g. ["nums", "target"].
+  // Used to label custom-test-case input fields; empty if they couldn't be
+  // parsed from the starter code.
+  paramNames: string[]
 }
 
 /** Fetch a problem's name + description (never the solution) by slug. */

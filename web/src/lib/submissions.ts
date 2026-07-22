@@ -26,7 +26,7 @@ export type SubmissionStatus = 'queued' | 'processing' | 'completed' | 'failed'
 export interface Submission {
   id: number
   status: SubmissionStatus
-  mode: 'run' | 'submit' | null
+  mode: 'run' | 'submit' | 'custom' | null
   results: CaseResult[] | null
   testsPassed: number | null
   testsTotal: number | null
@@ -40,7 +40,10 @@ export interface RunParams {
   problemId: number
   lang: SubmissionLang
   sourceCode: string
-  mode: 'run' | 'submit'
+  mode: 'run' | 'submit' | 'custom'
+  // "custom" mode only: one Python-literal-style input string per ad-hoc test
+  // case, e.g. "nums = [3, 3], target = 6".
+  customInputs?: string[]
   roomId?: number
 }
 
@@ -71,7 +74,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
  * Resolves with the completed/failed submission row (results included).
  */
 export async function runSolution(
-  { problemId, lang, sourceCode, mode, roomId }: RunParams,
+  { problemId, lang, sourceCode, mode, customInputs, roomId }: RunParams,
   { intervalMs = 700, timeoutMs = 40_000 }: { intervalMs?: number; timeoutMs?: number } = {},
 ): Promise<Submission> {
   const { id } = await post<{ id: number; status: SubmissionStatus }>('submissions', {
@@ -79,6 +82,7 @@ export async function runSolution(
     languageId: LANGUAGE_IDS[lang],
     sourceCode,
     mode,
+    customInputs,
     roomId,
   })
 

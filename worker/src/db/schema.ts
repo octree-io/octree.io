@@ -34,7 +34,8 @@ export const submissions = pgTable("submissions", {
   sourceCode: text("source_code").notNull(),
   stdin: text("stdin"),
   expectedOutput: text("expected_output"),
-  mode: text("mode").$type<"run" | "submit">(),
+  mode: text("mode").$type<"run" | "submit" | "custom">(),
+  customInputs: jsonb("custom_inputs").$type<string[]>(),
 
   status: submissionStatusEnum("status").notNull().default("queued"),
   error: text("error"),

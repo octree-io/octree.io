@@ -145,11 +145,16 @@ function normalize(s: string): string {
 /**
  * Grade the driver's stdout against expected outputs. Cases with no result line
  * (e.g. the program crashed partway) are reported as errored/not-run.
+ *
+ * `compareExpected: false` (custom ad-hoc test cases, which have no known
+ * expected output) skips the pass/fail comparison — `passed` just means "ran
+ * without error", and `got` is always the actual output.
  */
 export function gradeCases(
   cases: TestCaseInput[],
   stdout: string,
   parseErrors: Map<number, string> = new Map(),
+  { compareExpected = true }: { compareExpected?: boolean } = {},
 ): GradedCase[] {
   const byIndex: Map<number, CaseResult> = parseDriverOutput(stdout);
   return cases.map((c, idx) => {
@@ -194,7 +199,7 @@ export function gradeCases(
         stdout: r.stdout,
       };
     }
-    const passed = normalize(r.output) === normalize(c.expectedOutput);
+    const passed = compareExpected ? normalize(r.output) === normalize(c.expectedOutput) : true;
     return {
       index: idx,
       ordinal: c.ordinal,

@@ -207,8 +207,13 @@ export const submissions = pgTable("submissions", {
   expectedOutput: text("expected_output"),
 
   // How to grade. "run" executes against a sample of the problem's test cases,
-  // "submit" against all of them; null is a raw single-shot run (source+stdin).
-  mode: text("mode").$type<"run" | "submit">(),
+  // "submit" against all of them, "custom" against user-supplied ad-hoc inputs
+  // (see customInputs); null is a raw single-shot run (source+stdin).
+  mode: text("mode").$type<"run" | "submit" | "custom">(),
+  // "custom" mode's ad-hoc inputs, one Python-literal-style string per case
+  // (same format as test_cases.input, e.g. "nums = [3, 3], target = 6") — no
+  // expected output exists for these, so they're never graded pass/fail.
+  customInputs: jsonb("custom_inputs").$type<string[]>(),
 
   // Pipeline state.
   status: submissionStatusEnum("status").notNull().default("queued"),

@@ -70,23 +70,37 @@ async function processGraded(
     return;
   }
 
-  const allCases = await db
-    .select({
-      ordinal: testCases.ordinal,
-      input: testCases.input,
-      expectedOutput: testCases.expectedOutput,
-    })
-    .from(testCases)
-    .where(eq(testCases.problemId, submission.problemId!))
-    .orderBy(asc(testCases.ordinal));
+  // "custom" runs user-supplied ad-hoc inputs instead of the problem's stored
+  // test cases — there's no known expected output for these, so grading just
+  // reports "ran without error" rather than pass/fail.
+  const isCustom = submission.mode === "custom";
+  let cases: TestCaseInput[];
 
-  if (allCases.length === 0) {
-    await recordFailure(submissionId, "This problem has no test cases");
-    return;
+  if (isCustom) {
+    const inputs = submission.customInputs ?? [];
+    if (inputs.length === 0) {
+      await recordFailure(submissionId, "No custom test cases provided");
+      return;
+    }
+    cases = inputs.map((input, i) => ({ ordinal: i, input, expectedOutput: "" }));
+  } else {
+    const allCases = await db
+      .select({
+        ordinal: testCases.ordinal,
+        input: testCases.input,
+        expectedOutput: testCases.expectedOutput,
+      })
+      .from(testCases)
+      .where(eq(testCases.problemId, submission.problemId!))
+      .orderBy(asc(testCases.ordinal));
+
+    if (allCases.length === 0) {
+      await recordFailure(submissionId, "This problem has no test cases");
+      return;
+    }
+
+    cases = submission.mode === "run" ? allCases.slice(0, RUN_SAMPLE_CASES) : allCases;
   }
-
-  const cases: TestCaseInput[] =
-    submission.mode === "run" ? allCases.slice(0, RUN_SAMPLE_CASES) : allCases;
 
   // Build the runnable program. HarnessError here is a deterministic problem
   // (unsupported types, bad signature) — record it, don't retry.
@@ -113,7 +127,7 @@ async function processGraded(
 
   const result = await waitForResult(token);
   const stdout = result.stdout ?? "";
-  const graded = gradeCases(cases, stdout, built.parseErrors);
+  const graded = gradeCases(cases, stdout, built.parseErrors, { compareExpected: !isCustom });
   const passed = graded.filter((g) => g.passed).length;
 
   // A compile error (or crash before any case ran) leaves no structured output;

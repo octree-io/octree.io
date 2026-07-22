@@ -746,12 +746,11 @@ export default function Room() {
                   <div className="run-panel-empty">
                     This problem's parameters couldn't be detected — custom tests aren't available.
                   </div>
+                ) : customCases.length === 0 ? (
+                  <div className="run-panel-empty">Add a test case to try your code against custom inputs.</div>
                 ) : (
                   <>
                     <div className="custom-cases">
-                      {customCases.length === 0 && (
-                        <div className="run-panel-empty">Add a test case to try your code against custom inputs.</div>
-                      )}
                       {customCases.map((c, idx) => {
                         const result = customResults?.find(r => r.id === c.id)
                         const isOpen = expandedCustom === c.id

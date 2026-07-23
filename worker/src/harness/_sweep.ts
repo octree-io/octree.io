@@ -4,7 +4,7 @@ import postgres from "postgres";
 import { buildProgram, gradeCases, LANGUAGE_IDS, HarnessError, type TestCaseInput } from "./index.js";
 
 const DB = process.env.DATABASE_URL ?? "postgresql://postgres@localhost:5432/octree";
-const JUDGE0 = (process.env.JUDGE0_URL ?? "http://94.130.34.33:2358").replace(/\/+$/, "");
+const JUDGE0 = (process.env.JUDGE0_URL ?? "http://localhost:2358").replace(/\/+$/, "");
 const b64 = (s: string) => Buffer.from(s, "utf-8").toString("base64");
 const unb64 = (s: string | null) => (s ? Buffer.from(s, "base64").toString("utf-8") : "");
 

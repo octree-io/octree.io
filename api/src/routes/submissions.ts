@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
-import { submissions } from "../db/schema.js";
+import { submissions, users } from "../db/schema.js";
 import { enqueueSubmission } from "../queue/submissions.js";
 import { ApiError } from "../middleware/error.js";
+import { resolveRoomId } from "../lib/roomSlug.js";
+import { recordSolve, announceSolve, announceFailedSubmit } from "../realtime/roomSolves.js";
 
 type SubmissionRow = typeof submissions.$inferSelect;
 
@@ -35,6 +37,37 @@ function redactForClient(sub: SubmissionRow): SubmissionRow {
   };
 }
 
+// Announce a completed "submit" into the room chat — a ranked medal on the
+// first pass, or a failure line otherwise — exactly once per submission.
+//
+// The client polls the same submission repeatedly, so we atomically claim the
+// announcement by flipping `announcedAt` (WHERE announcedAt IS NULL); only the
+// poll that wins that update proceeds. Caller guarantees this is a completed
+// "submit" with room/problem/user context and testsTotal > 0.
+async function maybeAnnounce(sub: SubmissionRow): Promise<void> {
+  const [claimed] = await db
+    .update(submissions)
+    .set({ announcedAt: new Date() })
+    .where(and(eq(submissions.id, sub.id), isNull(submissions.announcedAt)))
+    .returning({ id: submissions.id });
+  if (!claimed) return;
+
+  const solver = await db.query.users.findFirst({
+    where: eq(users.id, sub.userId!),
+    columns: { username: true },
+  });
+  const name = solver?.username ?? "someone";
+
+  if (sub.testsPassed === sub.testsTotal) {
+    // First pass for this user gets a rank; a repeat pass records nothing and
+    // is announced silently (recordSolve returns null).
+    const rank = await recordSolve(sub.roomId!, sub.problemId!, sub.userId!);
+    if (rank !== null) announceSolve(sub.roomId!, name, rank);
+  } else {
+    announceFailedSubmit(sub.roomId!, name, sub.testsPassed ?? 0, sub.testsTotal!);
+  }
+}
+
 export const submissionsRouter = Router();
 
 const createSubmissionSchema = z
@@ -52,7 +85,9 @@ const createSubmissionSchema = z
     customInputs: z.array(z.string().min(1).max(2_000)).min(1).max(20).optional(),
     userId: z.number().int().positive().optional(),
     problemId: z.number().int().positive().optional(),
-    roomId: z.number().int().positive().optional(),
+    // Accepts either the numeric room id or its URL slug (noise-tortoise-sun)
+    // — the client only knows the slug from the route, so it's resolved here.
+    roomId: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
   })
   .refine((d) => !d.mode || d.problemId, {
     message: "problemId is required when mode is set",
@@ -68,9 +103,15 @@ submissionsRouter.post("/", async (req, res, next) => {
   try {
     const data = createSubmissionSchema.parse(req.body);
 
+    const roomId =
+      typeof data.roomId === "string" ? resolveRoomId(data.roomId) : data.roomId ?? null;
+    if (data.roomId !== undefined && roomId === null) {
+      throw new ApiError(400, "Invalid roomId");
+    }
+
     const [submission] = await db
       .insert(submissions)
-      .values(data)
+      .values({ ...data, roomId })
       .returning();
 
     try {
@@ -103,6 +144,19 @@ submissionsRouter.get("/:id", async (req, res, next) => {
       where: eq(submissions.id, id),
     });
     if (!submission) throw new ApiError(404, "Submission not found");
+
+    if (
+      submission.status === "completed" &&
+      submission.mode === "submit" &&
+      submission.roomId != null &&
+      submission.problemId != null &&
+      submission.userId != null &&
+      submission.testsTotal !== null &&
+      submission.testsTotal > 0
+    ) {
+      await maybeAnnounce(submission);
+    }
+
     res.json(redactForClient(submission));
   } catch (err) {
     next(err);

@@ -6,6 +6,7 @@ import {
   boolean,
   pgEnum,
   index,
+  uniqueIndex,
   jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -177,6 +178,38 @@ export const chatMessages = pgTable(
   }),
 );
 
+// ─── Room solves ─────────────────────────────────────────────────────────────
+
+// Tracks the first passing "submit" per (room, problem, user) so the room
+// chat can announce it exactly once and rank solvers in the order they
+// finished. A room's problem rotates each round, so this is keyed by problem
+// too — solving a repeat problem in a later round announces again.
+export const roomSolves = pgTable(
+  "room_solves",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    roomId: integer("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    problemId: integer("problem_id")
+      .notNull()
+      .references(() => problems.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    // Guards against re-announcing: a second "submit" pass for the same
+    // room+problem+user simply conflicts and is ignored.
+    roomProblemUserIdx: uniqueIndex("room_solves_room_problem_user_idx").on(
+      t.roomId,
+      t.problemId,
+      t.userId,
+    ),
+  }),
+);
+
 // ─── Submissions ──────────────────────────────────────────────────────────────
 
 // One graded test case within a submission's `results` array.
@@ -236,6 +269,11 @@ export const submissions = pgTable("submissions", {
   testsPassed: integer("tests_passed"),
   testsTotal: integer("tests_total"),
 
+  // Set once, the first time a completed "submit" is announced into the room
+  // chat (pass or fail). Guards against re-announcing across the client's
+  // repeated status polls and any concurrent pollers.
+  announcedAt: timestamp("announced_at"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   finishedAt: timestamp("finished_at"),
@@ -273,6 +311,12 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
+export const roomSolvesRelations = relations(roomSolves, ({ one }) => ({
+  room: one(rooms, { fields: [roomSolves.roomId], references: [rooms.id] }),
+  problem: one(problems, { fields: [roomSolves.problemId], references: [problems.id] }),
+  user: one(users, { fields: [roomSolves.userId], references: [users.id] }),
 }));
 
 export const submissionsRelations = relations(submissions, ({ one }) => ({

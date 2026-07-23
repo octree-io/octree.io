@@ -10,6 +10,7 @@ import {
 import { useRoom, initials as toInitials, sameGroup, type ChatMessage } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
 import { runSolution, type Submission } from '../../lib/submissions'
+import { useAuth } from '../../lib/AuthContext'
 import './Room.css'
 
 /* ---------- types ---------- */
@@ -209,6 +210,7 @@ export default function Room() {
 
   /* room */
   const { id: roomId } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const [timeLeft,      setTimeLeft]      = useState(TOTAL_SECS)
   const [chatInput,     setChatInput]     = useState('')
   const [runLoading,    setRunLoading]    = useState(false)
@@ -422,7 +424,15 @@ export default function Room() {
     setResultsMode(mode)
     setRunError(null)
     try {
-      const sub = await runSolution({ problemId, lang, sourceCode: myCode, mode })
+      // Only "submit" needs room/user context — it's the only mode that
+      // gets tracked for the room's "first to solve" chat announcement.
+      const sub = await runSolution({
+        problemId,
+        lang,
+        sourceCode: myCode,
+        mode,
+        ...(mode === 'submit' ? { roomId, userId: user?.id } : {}),
+      })
       const allPassed = applySubmission(sub)
       if (mode === 'submit' && allPassed) setSubmitted(true)
     } catch (err) {
@@ -502,7 +512,7 @@ export default function Room() {
     const d = new Date(iso)
     return Number.isNaN(d.getTime())
       ? ''
-      : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
 
   const passedCount       = results?.filter(r => r.passed).length ?? 0
@@ -960,6 +970,22 @@ export default function Room() {
                     x: rect.left + rect.width / 2,
                     y: rect.top,
                   })
+                }
+                // System notices (e.g. solve announcements) render as a plain
+                // centered line — no avatar, no author name.
+                if (m.authorId === 'system') {
+                  return (
+                    <div key={m.id} className="chat-system">
+                      <span
+                        className="chat-system-ts"
+                        onMouseEnter={showTsTooltip}
+                        onMouseLeave={() => setTsTooltip(null)}
+                      >
+                        {fmtStamp(m.createdAt)}
+                      </span>
+                      <span>{m.body}</span>
+                    </div>
+                  )
                 }
                 return (
                   <div key={m.id} className={`chat-msg${grouped ? ' grouped' : ''}`}>

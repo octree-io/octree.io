@@ -64,6 +64,20 @@
       "when": 1784707419521,
       "tag": "0008_closed_lilith",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784793479435,
+      "tag": "0009_strong_mongu",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784794061861,
+      "tag": "0010_colossal_punisher",
+      "breakpoints": true
     }
   ]
 }

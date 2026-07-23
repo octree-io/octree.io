@@ -1,0 +1,1 @@
+ALTER TABLE "submissions" ADD COLUMN "announced_at" timestamp;

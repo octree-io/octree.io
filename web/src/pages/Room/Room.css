@@ -935,6 +935,17 @@ button.result-case:hover {
 
 .chat-empty { padding: 6px 2px; font-size: 0.82rem; color: var(--muted); font-style: italic; }
 
+.chat-system {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  margin: 2px 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.chat-system-ts { flex-shrink: 0; font-size: 0.7rem; opacity: 0.7; }
+
 .chat-msg {
   display: flex;
   gap: 11px;

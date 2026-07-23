@@ -44,7 +44,10 @@ export interface RunParams {
   // "custom" mode only: one Python-literal-style input string per ad-hoc test
   // case, e.g. "nums = [3, 3], target = 6".
   customInputs?: string[]
-  roomId?: number
+  // Either the numeric room id or its URL slug (noise-tortoise-sun) — the
+  // API resolves either form back to the numeric id.
+  roomId?: number | string
+  userId?: number
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -74,7 +77,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
  * Resolves with the completed/failed submission row (results included).
  */
 export async function runSolution(
-  { problemId, lang, sourceCode, mode, customInputs, roomId }: RunParams,
+  { problemId, lang, sourceCode, mode, customInputs, roomId, userId }: RunParams,
   { intervalMs = 700, timeoutMs = 40_000 }: { intervalMs?: number; timeoutMs?: number } = {},
 ): Promise<Submission> {
   const { id } = await post<{ id: number; status: SubmissionStatus }>('submissions', {
@@ -84,6 +87,7 @@ export async function runSolution(
     mode,
     customInputs,
     roomId,
+    userId,
   })
 
   const deadline = Date.now() + timeoutMs

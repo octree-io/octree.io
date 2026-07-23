@@ -16,6 +16,7 @@ import {
 } from "./messages.js";
 import { isChannelId } from "../lib/channels.js";
 import * as roomTimer from "./roomTimer.js";
+import { setIo } from "./broadcast.js";
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -202,5 +203,6 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
     });
   });
 
+  setIo(io);
   return io;
 }

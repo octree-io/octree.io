@@ -488,59 +488,80 @@
 /* Monaco fills the whole editor-body */
 .editor-body > section,
 .editor-body > .monaco-editor-container,
-.editor-body > div:not(.blurred-editor) {
+.editor-body > div {
   height: 100% !important;
 }
 
-/* ---------- blurred other-player view ---------- */
-.blurred-editor {
+/* ---------- peer (other-player) editor view ---------- */
+.ptab-lock { font-size: 0.7rem; line-height: 1; }
+
+.ptab-lang-static {
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+
+.peer-editor {
   position: relative;
   height: 100%;
   overflow: hidden;
 }
 
-.blurred-code {
-  height: 100%;
-  margin: 0;
-  padding: 14px 18px;
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  line-height: 1.6;
-  color: var(--text);
-  background: var(--bg);
-  overflow: auto;
-  white-space: pre;
-  filter: blur(5px);
+.peer-editor-inner { height: 100%; }
+.peer-editor-inner > section,
+.peer-editor-inner > div { height: 100% !important; }
+
+/* While solving, a peer's buffer is a server-side-scrambled decoy; the blur is
+   purely cosmetic — there's no real code in the DOM to un-hide. */
+.peer-editor-inner.peer-blurred {
+  filter: blur(6px);
   user-select: none;
   pointer-events: none;
 }
 
-.blur-overlay {
+.peer-lock-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  /* frosted glass on top of the blurred code */
+  gap: 8px;
+  text-align: center;
+  padding: 20px;
   background: rgba(15, 15, 20, 0.55);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
 
-.blur-overlay svg {
-  stroke: var(--muted);
-  width: 28px;
-  height: 28px;
-  opacity: 0.6;
+.peer-lock-icon { font-size: 30px; opacity: 0.85; }
+
+.peer-lock-title {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 600;
 }
 
-.blur-overlay span {
-  font-size: 0.88rem;
+.peer-lock-sub {
+  font-size: 0.82rem;
   color: var(--muted);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.peer-editor-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
   font-family: var(--mono);
-  letter-spacing: 0.01em;
 }
 
 /* ---------- run panel (always visible) ---------- */

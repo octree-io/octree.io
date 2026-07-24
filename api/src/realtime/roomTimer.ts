@@ -5,6 +5,7 @@ import { env } from "../config.js";
 import { resolveRoomId } from "../lib/roomSlug.js";
 import { countPresence } from "./presence.js";
 import { humanizeTitle } from "../lib/humanizeTitle.js";
+import * as roomCode from "./roomCode.js";
 import type { ProblemPayload, RoundPayload, RoomPhase, RealtimeServer } from "./types.js";
 
 type RoomRow = typeof rooms.$inferSelect;
@@ -130,6 +131,8 @@ export async function startOrResume(
   // A live phase is already in flight → just resume it for the joiner.
   if (room.status === "active" && room.roundEndsAt && endsAt > now) {
     arm(io, roomKey, endsAt - now);
+    // Keep the code store's phase in sync so joiners get the right visibility.
+    roomCode.setPhase(roomKey, room.phase);
     const problem = room.problemId !== null ? await loadProblem(room.problemId) : null;
     return {
       problem: problem ? problemPayload(problem) : null,
@@ -153,6 +156,8 @@ export async function startOrResume(
   }
 
   const phaseEndsAt = now + solveSeconds(room) * 1000;
+  // Fresh solving phase — peers' code is redacted until this round's review.
+  roomCode.setPhase(roomKey, "solving");
   await db
     .update(rooms)
     .set({
@@ -195,6 +200,7 @@ async function advance(io: RealtimeServer, roomKey: string): Promise<void> {
   // than rotating to a new problem nobody is there to solve.
   if (countPresence(roomKey) === 0) {
     await finishRoom(room.id);
+    roomCode.clearRoom(roomKey);
     stop(roomKey);
     return;
   }
@@ -213,11 +219,17 @@ async function advance(io: RealtimeServer, roomKey: string): Promise<void> {
       problem: problem ? problemPayload(problem) : null,
       round: roundPayload(room.roundNumber, "review", endsAt),
     });
+    // Review reveals solutions: push everyone's real, un-redacted code.
+    roomCode.setPhase(roomKey, "review");
+    roomCode.reveal(io, roomKey);
     arm(io, roomKey, endsAt - Date.now());
     return;
   }
 
-  // Review finished → next round on a new problem.
+  // Review finished → next round on a new problem. Everyone's buffers reset to
+  // starter code, so drop the shared store and go back to redacting.
+  roomCode.clearRoom(roomKey);
+  roomCode.setPhase(roomKey, "solving");
   const chosen = chooseNext(await difficultyPool(room.difficulty), room.usedProblemIds, room.problemId);
   const roundNumber = room.roundNumber + 1;
   const endsAt = Date.now() + solveSeconds(room) * 1000;
@@ -265,6 +277,7 @@ export async function closeRoom(roomKey: string, userId: number): Promise<boolea
   const room = await loadRoom(roomKey);
   if (!room || room.hostId !== userId) return false;
   await finishRoom(room.id);
+  roomCode.clearRoom(roomKey);
   stop(roomKey);
   return true;
 }

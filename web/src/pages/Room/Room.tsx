@@ -54,6 +54,39 @@ const MONACO_LANG: Record<Lang, string> = {
   python: 'python', java: 'java', cpp: 'cpp', javascript: 'javascript',
 }
 
+// How long after the last keystroke we push the buffer to peers. Long enough to
+// coalesce fast typing, short enough to feel live.
+const CODE_SYNC_MS = 300
+
+// Shared Monaco options for both your editable buffer and the read-only peer
+// views, so a peer's code renders with the same look as your own.
+const BASE_EDITOR_OPTIONS = {
+  fontSize: 13,
+  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+  fontLigatures: false,
+  minimap: { enabled: false },
+  scrollBeyondLastLine: false,
+  lineNumbers: 'on',
+  padding: { top: 14, bottom: 14 },
+  wordWrap: 'off',
+  tabSize: 4,
+  renderWhitespace: 'selection',
+  smoothScrolling: true,
+  cursorBlinking: 'phase',
+  cursorSmoothCaretAnimation: 'on',
+  overviewRulerBorder: false,
+  hideCursorInOverviewRuler: true,
+  scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 5 },
+  // Don't pop up suggestions just from typing — only when the
+  // user explicitly asks for them (Ctrl+Space).
+  quickSuggestions: false,
+  suggestOnTriggerCharacters: false,
+  acceptSuggestionOnEnter: 'off',
+  wordBasedSuggestions: 'off',
+  parameterHints: { enabled: false },
+  tabCompletion: 'off',
+} as const
+
 // Maps the client's Lang key to the language slug used in problems.starter_code.
 const STARTER_CODE_LANG: Record<Lang, string> = {
   python: 'python3', java: 'java', cpp: 'cpp', javascript: 'javascript',
@@ -245,12 +278,18 @@ export default function Room() {
     problem: liveProblem,
     round,
     solves,
+    peerCode,
     connected,
     sendMessage: sendChat,
+    sendCode,
     youAreHost,
     closeRoom,
     closed,
   } = useRoom(roomId)
+
+  /* which editor tab is showing: null = your own (editable), otherwise a peer's
+     identity id (read-only, blurred until review) */
+  const [viewingPeerId, setViewingPeerId] = useState<string | null>(null)
 
   const navigate = useNavigate()
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -344,14 +383,29 @@ export default function Room() {
     return () => clearInterval(t)
   }, [round?.endsAt])
 
-  /* a new round means a fresh problem — clear stale run results */
+  /* a new round means a fresh problem — clear stale run results, and drop back
+     to your own tab (peers reset to starter code) */
   useEffect(() => {
     setResults(null)
     setResultsMode(null)
     setExpandedCase(null)
     setRunError(null)
     setSubmitted(false)
+    setViewingPeerId(null)
   }, [round?.number])
+
+  /* share your buffer with the room, debounced so fast typing coalesces */
+  useEffect(() => {
+    const t = setTimeout(() => sendCode(lang, myCode), CODE_SYNC_MS)
+    return () => clearTimeout(t)
+  }, [myCode, lang, sendCode])
+
+  /* if the peer whose tab you're viewing leaves, fall back to your own */
+  useEffect(() => {
+    if (viewingPeerId && !liveParticipants.some(p => p.id === viewingPeerId)) {
+      setViewingPeerId(null)
+    }
+  }, [viewingPeerId, liveParticipants])
 
   /* scroll chat */
   useEffect(() => {
@@ -553,6 +607,14 @@ export default function Room() {
 
   const phase = round?.phase ?? 'solving'
 
+  // Editor tabs: you first, then everyone else in the room. A peer tab shows
+  // their shared buffer read-only — a scrambled decoy while solving, the real
+  // code once the round is in review.
+  const youColor = you?.color ?? '#3b6fb0'
+  const others = liveParticipants.filter(p => !you || p.id !== you.id)
+  const viewingPeer = viewingPeerId ? liveParticipants.find(p => p.id === viewingPeerId) ?? null : null
+  const viewingPeerCode = viewingPeerId ? peerCode.get(viewingPeerId) ?? null : null
+
   return (
     <div className="room">
 
@@ -659,53 +721,84 @@ export default function Room() {
           {/* participant tabs + language selector */}
           <div className="participant-tabs">
             <div className="ptab-list">
-              <button className="ptab ptab-mine ptab-active">
-                <Avatar initials="RØ" color="#3b6fb0" size={20} />
+              <button
+                type="button"
+                className={`ptab ptab-mine${viewingPeerId === null ? ' ptab-active' : ''}`}
+                onClick={() => setViewingPeerId(null)}
+              >
+                <Avatar initials={toInitials(you?.name ?? 'you')} color={youColor} size={20} />
                 <span className="ptab-name">{you?.name ?? 'you'}</span>
                 <span className="ptab-you-dot" />
               </button>
+              {others.map(p => {
+                const pc = peerCode.get(p.id)
+                const locked = pc?.redacted ?? true
+                return (
+                  <button
+                    type="button"
+                    key={p.id}
+                    className={`ptab${viewingPeerId === p.id ? ' ptab-active' : ''}`}
+                    onClick={() => setViewingPeerId(p.id)}
+                    title={locked ? `${p.name}'s solution is hidden until review` : `${p.name}'s solution`}
+                  >
+                    <Avatar initials={toInitials(p.name)} color={p.color} size={20} />
+                    <span className="ptab-name">{p.name}</span>
+                    {locked && <span className="ptab-lock" aria-label="hidden until review">🔒</span>}
+                  </button>
+                )
+              })}
             </div>
 
             <div className="ptab-lang">
-              <LangSelect value={lang} onChange={switchLang} />
+              {viewingPeer ? (
+                <span className="ptab-lang-static">
+                  {LANG_LABELS[viewingPeerCode?.lang as Lang] ?? viewingPeerCode?.lang ?? ''}
+                </span>
+              ) : (
+                <LangSelect value={lang} onChange={switchLang} />
+              )}
             </div>
           </div>
 
-          {/* editor body */}
+          {/* editor body — your editable buffer, or a peer's read-only view */}
           <div className="editor-body">
-            <Editor
-              language={MONACO_LANG[lang]}
-              value={myCode}
-              onChange={v => updateMyCode(v ?? '')}
-              theme="octree"
-              beforeMount={setupTheme}
-              options={{
-                fontSize: 13,
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                fontLigatures: false,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                lineNumbers: 'on',
-                padding: { top: 14, bottom: 14 },
-                wordWrap: 'off',
-                tabSize: 4,
-                renderWhitespace: 'selection',
-                smoothScrolling: true,
-                cursorBlinking: 'phase',
-                cursorSmoothCaretAnimation: 'on',
-                overviewRulerBorder: false,
-                hideCursorInOverviewRuler: true,
-                scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 5 },
-                // Don't pop up suggestions just from typing — only when the
-                // user explicitly asks for them (Ctrl+Space).
-                quickSuggestions: false,
-                suggestOnTriggerCharacters: false,
-                acceptSuggestionOnEnter: 'off',
-                wordBasedSuggestions: 'off',
-                parameterHints: { enabled: false },
-                tabCompletion: 'off',
-              }}
-            />
+            {viewingPeer ? (
+              viewingPeerCode ? (
+                <div className="peer-editor">
+                  <div className={`peer-editor-inner${viewingPeerCode.redacted ? ' peer-blurred' : ''}`}>
+                    <Editor
+                      language={MONACO_LANG[viewingPeerCode.lang as Lang] ?? 'plaintext'}
+                      value={viewingPeerCode.code}
+                      theme="octree"
+                      beforeMount={setupTheme}
+                      options={{ ...BASE_EDITOR_OPTIONS, readOnly: true, domReadOnly: true }}
+                    />
+                  </div>
+                  {viewingPeerCode.redacted && (
+                    <div className="peer-lock-overlay">
+                      <div className="peer-lock-icon">🔒</div>
+                      <div className="peer-lock-title">Hidden until review</div>
+                      <div className="peer-lock-sub">
+                        {viewingPeer.name}'s solution unlocks when the round ends.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="peer-editor-empty">
+                  Waiting for {viewingPeer.name} to start typing…
+                </div>
+              )
+            ) : (
+              <Editor
+                language={MONACO_LANG[lang]}
+                value={myCode}
+                onChange={v => updateMyCode(v ?? '')}
+                theme="octree"
+                beforeMount={setupTheme}
+                options={BASE_EDITOR_OPTIONS}
+              />
+            )}
           </div>
 
           {/* run panel — always visible; hosts run/submit and their output */}

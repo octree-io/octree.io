@@ -18,6 +18,7 @@ import { isChannelId } from "../lib/channels.js";
 import * as roomTimer from "./roomTimer.js";
 import { setIo } from "./broadcast.js";
 import { listSolves } from "./roomSolves.js";
+import * as roomCode from "./roomCode.js";
 import { resolveRoomId } from "../lib/roomSlug.js";
 import type {
   ClientToServerEvents,
@@ -126,6 +127,8 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
           problem: roundState?.problem ?? null,
           round: roundState?.round ?? null,
           solves,
+          // Everyone else's buffers (redacted unless the room is in review).
+          peers: roomCode.snapshot(roomId, identity.id),
         });
       } catch (err) {
         console.error("[realtime] room:join failed:", err);
@@ -202,8 +205,20 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
       }
     });
 
+    // Share the socket's current editor buffer with the rest of the room. Peers
+    // only ever receive a redacted decoy while solving — the real source is held
+    // server-side and released to everyone only once the round enters review.
+    socket.on("code:update", ({ lang, code }) => {
+      const { roomId, identity } = socket.data;
+      if (!roomId || !identity) return;
+      const payload = roomCode.setCode(roomId, identity, lang, code);
+      if (payload) socket.to(roomId).emit("peer:code", { roomId, ...payload });
+    });
+
     socket.on("disconnect", () => {
       const roomId = socket.data.roomId;
+      const identity = socket.data.identity;
+      if (identity && roomId) roomCode.removeCode(roomId, identity.id);
       if (!roomId) return;
       // Leave presence but keep the room's timer running — an empty room closes
       // itself at the next round boundary, which also survives brief drops (e.g.

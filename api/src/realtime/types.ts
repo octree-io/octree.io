@@ -36,6 +36,17 @@ export interface SolveRank {
 
 export type RoomPhase = "solving" | "review";
 
+// One participant's shared editor buffer. While the round is being solved,
+// `code` is a redacted decoy (same shape, scrambled characters) and `redacted`
+// is true — the real source is withheld server-side. In review it's the genuine
+// code with `redacted` false. `authorId` matches a roster identity id.
+export interface PeerCodePayload {
+  authorId: string;
+  lang: string;
+  code: string;
+  redacted: boolean;
+}
+
 export interface RoundPayload {
   number: number;
   phase: RoomPhase; // solving the problem, or reviewing solutions
@@ -57,6 +68,8 @@ export interface RoomStatePayload {
   problem: ProblemPayload | null;
   round: RoundPayload | null;
   solves: SolveRank[];
+  // Everyone else's current editor buffers (redacted while solving).
+  peers: PeerCodePayload[];
 }
 
 // ── client → server ──
@@ -66,6 +79,11 @@ export interface JoinPayload {
 }
 export interface SendPayload {
   body: string;
+}
+// The socket's current editor buffer, pushed as the user types (throttled).
+export interface CodeUpdatePayload {
+  lang: string;
+  code: string;
 }
 
 // Cursor-based backfill: fetch the page of messages immediately older than
@@ -82,6 +100,8 @@ export interface HistoryResult {
 export interface ClientToServerEvents {
   "room:join": (p: JoinPayload) => void;
   "chat:send": (p: SendPayload) => void;
+  // Share the socket's current editor buffer with the rest of the room.
+  "code:update": (p: CodeUpdatePayload) => void;
   // Host-only: end the current room and evict everyone.
   "room:close": () => void;
   // Load older messages (scroll-back pagination). Replies via ack callback.
@@ -97,6 +117,8 @@ export interface ServerToClientEvents {
   "presence:update": (p: { roomId: string; participants: Identity[] }) => void;
   // Updated finish-order badges for the room's current problem.
   "room:solves": (p: { roomId: string; solves: SolveRank[] }) => void;
+  // A peer's editor buffer changed (redacted while solving, real in review).
+  "peer:code": (p: { roomId: string } & PeerCodePayload) => void;
   "room:problem": (p: {
     roomId: string;
     problem: ProblemPayload | null;

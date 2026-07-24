@@ -36,6 +36,16 @@ export interface SolveRank {
 
 export type RoomPhase = 'solving' | 'review'
 
+// A peer's shared editor buffer. While solving, `code` is a scrambled decoy and
+// `redacted` is true (the real source stays server-side); in review it's the
+// genuine code. `authorId` matches a roster identity id.
+export interface PeerCode {
+  authorId: string
+  lang: string
+  code: string
+  redacted: boolean
+}
+
 export interface Round {
   number: number
   phase: RoomPhase
@@ -56,6 +66,7 @@ interface RoomState {
   problem: Problem | null
   round: Round | null
   solves: SolveRank[]
+  peers: PeerCode[]
 }
 
 interface ServerToClientEvents {
@@ -63,6 +74,7 @@ interface ServerToClientEvents {
   'chat:message': (p: ChatMessage) => void
   'presence:update': (p: { roomId: string; participants: Identity[] }) => void
   'room:solves': (p: { roomId: string; solves: SolveRank[] }) => void
+  'peer:code': (p: { roomId: string } & PeerCode) => void
   'room:problem': (p: { roomId: string; problem: Problem | null; round: Round }) => void
   'lobby:rooms': (p: { rooms: LobbyRoomPresence[] }) => void
   'lobby:presence': (p: LobbyRoomPresence) => void
@@ -78,6 +90,7 @@ interface HistoryResult {
 interface ClientToServerEvents {
   'room:join': (p: { roomId: string; name?: string }) => void
   'chat:send': (p: { body: string }) => void
+  'code:update': (p: { lang: string; code: string }) => void
   'room:close': () => void
   'chat:history': (p: { before: number; limit?: number }, cb: (res: HistoryResult) => void) => void
   'lobby:join': () => void
@@ -134,7 +147,11 @@ export interface UseRoom {
   round: Round | null
   /** Finish-order badges for the current problem, reset each round. */
   solves: SolveRank[]
+  /** Peers' shared editor buffers, keyed by identity id (redacted while solving). */
+  peerCode: Map<string, PeerCode>
   sendMessage: (body: string) => void
+  /** Share your current editor buffer with the room. */
+  sendCode: (lang: string, code: string) => void
   /** Whether the signed-in user hosts this room (may close it). */
   youAreHost: boolean
   /** Ask the server to close this room (host only). */
@@ -169,6 +186,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   const [problem, setProblem] = useState<Problem | null>(null)
   const [round, setRound] = useState<Round | null>(null)
   const [solves, setSolves] = useState<SolveRank[]>([])
+  const [peerCode, setPeerCode] = useState<Map<string, PeerCode>>(new Map())
   const [youAreHost, setYouAreHost] = useState(false)
   const [closed, setClosed] = useState(false)
   const [hasMore, setHasMore] = useState(false)
@@ -191,6 +209,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     setProblem(null)
     setRound(null)
     setSolves([])
+    setPeerCode(new Map())
     setYouAreHost(false)
     setClosed(false)
     setHasMore(false)
@@ -210,6 +229,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       setProblem(state.problem)
       setRound(state.round)
       setSolves(state.solves ?? [])
+      setPeerCode(new Map((state.peers ?? []).map((p) => [p.authorId, p])))
       // A full first page implies there may be older messages to page back to.
       setHasMore(state.messages.length >= HISTORY_PAGE)
     }
@@ -234,12 +254,24 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       if (p.roomId !== roomId) return
       setProblem(p.problem)
       setRound(p.round)
-      // A new round starts on a fresh problem — clear the finish-order medals.
+      // A new round starts on a fresh problem — clear the finish-order medals
+      // and everyone's shared buffers (they reset to starter code).
       // (The solving→review transition keeps the same problem, so leave them.)
-      if (p.round.phase === 'solving') setSolves([])
+      if (p.round.phase === 'solving') {
+        setSolves([])
+        setPeerCode(new Map())
+      }
     }
     const onSolves = (p: { roomId: string; solves: SolveRank[] }) => {
       if (p.roomId === roomId) setSolves(p.solves)
+    }
+    const onPeerCode = (p: { roomId: string } & PeerCode) => {
+      if (p.roomId !== roomId) return
+      setPeerCode((prev) => {
+        const next = new Map(prev)
+        next.set(p.authorId, { authorId: p.authorId, lang: p.lang, code: p.code, redacted: p.redacted })
+        return next
+      })
     }
     const onDisconnect = () => setConnected(false)
 
@@ -249,6 +281,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     s.on('presence:update', onPresence)
     s.on('room:problem', onProblem)
     s.on('room:solves', onSolves)
+    s.on('peer:code', onPeerCode)
     s.on('room:closed', onClosed)
     s.on('disconnect', onDisconnect)
 
@@ -261,6 +294,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       s.off('presence:update', onPresence)
       s.off('room:problem', onProblem)
       s.off('room:solves', onSolves)
+      s.off('peer:code', onPeerCode)
       s.off('room:closed', onClosed)
       s.off('disconnect', onDisconnect)
     }
@@ -273,6 +307,10 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
 
   const closeRoom = useCallback(() => {
     getSocket().emit('room:close')
+  }, [])
+
+  const sendCode = useCallback((lang: string, code: string) => {
+    getSocket().emit('code:update', { lang, code })
   }, [])
 
   const loadOlder = useCallback(() => {
@@ -300,8 +338,8 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   }, [])
 
   return {
-    connected, you, participants, messages, problem, round, solves,
-    sendMessage, youAreHost, closeRoom, closed, loadOlder, hasMore, loadingOlder,
+    connected, you, participants, messages, problem, round, solves, peerCode,
+    sendMessage, sendCode, youAreHost, closeRoom, closed, loadOlder, hasMore, loadingOlder,
   }
 }
 

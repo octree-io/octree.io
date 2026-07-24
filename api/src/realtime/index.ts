@@ -17,6 +17,8 @@ import {
 import { isChannelId } from "../lib/channels.js";
 import * as roomTimer from "./roomTimer.js";
 import { setIo } from "./broadcast.js";
+import { listSolves } from "./roomSolves.js";
+import { resolveRoomId } from "../lib/roomSlug.js";
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -107,6 +109,14 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
           return;
         }
 
+        // Current finish-order medals for the room's active problem (empty for
+        // Chat channels and freshly rotated problems).
+        const numericRoomId = resolveRoomId(roomId);
+        const solves =
+          numericRoomId !== null && roundState?.problem
+            ? await listSolves(numericRoomId, roundState.problem.id)
+            : [];
+
         socket.emit("room:state", {
           roomId,
           you: identity,
@@ -115,6 +125,7 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
           messages,
           problem: roundState?.problem ?? null,
           round: roundState?.round ?? null,
+          solves,
         });
       } catch (err) {
         console.error("[realtime] room:join failed:", err);

@@ -6,7 +6,12 @@ import { submissions, users } from "../db/schema.js";
 import { enqueueSubmission } from "../queue/submissions.js";
 import { ApiError } from "../middleware/error.js";
 import { resolveRoomId } from "../lib/roomSlug.js";
-import { recordSolve, announceSolve, announceFailedSubmit } from "../realtime/roomSolves.js";
+import {
+  recordSolve,
+  announceSolve,
+  announceFailedSubmit,
+  broadcastSolves,
+} from "../realtime/roomSolves.js";
 
 type SubmissionRow = typeof submissions.$inferSelect;
 
@@ -62,7 +67,11 @@ async function maybeAnnounce(sub: SubmissionRow): Promise<void> {
     // First pass for this user gets a rank; a repeat pass records nothing and
     // is announced silently (recordSolve returns null).
     const rank = await recordSolve(sub.roomId!, sub.problemId!, sub.userId!);
-    if (rank !== null) announceSolve(sub.roomId!, name, rank);
+    if (rank !== null) {
+      announceSolve(sub.roomId!, name, rank);
+      // Refresh the roster's finish-order medals for everyone in the room.
+      await broadcastSolves(sub.roomId!, sub.problemId!);
+    }
   } else {
     announceFailedSubmit(sub.roomId!, name, sub.testsPassed ?? 0, sub.testsTotal!);
   }

@@ -26,6 +26,14 @@ export interface ProblemPayload {
   description: string;
 }
 
+// One solver's finish order for the room's current problem. `id` matches the
+// roster identity id (`u${userId}`) so the client can badge names directly.
+// Resets each round when a new problem starts.
+export interface SolveRank {
+  id: string;
+  rank: number; // 1-based order in which they solved the current problem
+}
+
 export type RoomPhase = "solving" | "review";
 
 export interface RoundPayload {
@@ -48,6 +56,7 @@ export interface RoomStatePayload {
   messages: ChatMessagePayload[];
   problem: ProblemPayload | null;
   round: RoundPayload | null;
+  solves: SolveRank[];
 }
 
 // ── client → server ──
@@ -86,6 +95,8 @@ export interface ServerToClientEvents {
   "room:state": (p: RoomStatePayload) => void;
   "chat:message": (p: ChatMessagePayload) => void;
   "presence:update": (p: { roomId: string; participants: Identity[] }) => void;
+  // Updated finish-order badges for the room's current problem.
+  "room:solves": (p: { roomId: string; solves: SolveRank[] }) => void;
   "room:problem": (p: {
     roomId: string;
     problem: ProblemPayload | null;

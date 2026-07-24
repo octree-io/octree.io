@@ -1,10 +1,10 @@
-import { and, eq, lte, sql } from "drizzle-orm";
+import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { roomSolves } from "../db/schema.js";
 import { encodeRoomSlug } from "../lib/roomSlug.js";
 import { makeEphemeralMessage } from "./messages.js";
 import { getIo } from "./broadcast.js";
-import type { Identity } from "./types.js";
+import type { Identity, SolveRank } from "./types.js";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -54,6 +54,28 @@ export async function recordSolve(
       ),
     );
   return row.count;
+}
+
+/**
+ * Everyone who's solved this room's given problem, in finish order, as roster
+ * badges (`u${userId}` → 1-based rank). Empty for a freshly rotated problem,
+ * which is how the roster medals reset each round.
+ */
+export async function listSolves(roomId: number, problemId: number): Promise<SolveRank[]> {
+  const rows = await db
+    .select({ userId: roomSolves.userId })
+    .from(roomSolves)
+    .where(and(eq(roomSolves.roomId, roomId), eq(roomSolves.problemId, problemId)))
+    .orderBy(asc(roomSolves.id));
+  return rows.map((r, i) => ({ id: `u${r.userId}`, rank: i + 1 }));
+}
+
+// Push the current finish-order badges to everyone in the room.
+export async function broadcastSolves(roomId: number, problemId: number): Promise<void> {
+  const io = getIo();
+  const slug = encodeRoomSlug(roomId);
+  if (!io || !slug) return;
+  io.to(slug).emit("room:solves", { roomId: slug, solves: await listSolves(roomId, problemId) });
 }
 
 const SYSTEM_AUTHOR: Identity = { id: "system", name: "octree", color: "#8a8f98" };

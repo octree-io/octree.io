@@ -27,6 +27,13 @@ export interface Problem {
   description: string
 }
 
+// A solver's finish order for the room's current problem. `id` matches a
+// roster identity id, so the sidebar can badge names directly.
+export interface SolveRank {
+  id: string
+  rank: number
+}
+
 export type RoomPhase = 'solving' | 'review'
 
 export interface Round {
@@ -48,12 +55,14 @@ interface RoomState {
   messages: ChatMessage[]
   problem: Problem | null
   round: Round | null
+  solves: SolveRank[]
 }
 
 interface ServerToClientEvents {
   'room:state': (p: RoomState) => void
   'chat:message': (p: ChatMessage) => void
   'presence:update': (p: { roomId: string; participants: Identity[] }) => void
+  'room:solves': (p: { roomId: string; solves: SolveRank[] }) => void
   'room:problem': (p: { roomId: string; problem: Problem | null; round: Round }) => void
   'lobby:rooms': (p: { rooms: LobbyRoomPresence[] }) => void
   'lobby:presence': (p: LobbyRoomPresence) => void
@@ -123,6 +132,8 @@ export interface UseRoom {
   messages: ChatMessage[]
   problem: Problem | null
   round: Round | null
+  /** Finish-order badges for the current problem, reset each round. */
+  solves: SolveRank[]
   sendMessage: (body: string) => void
   /** Whether the signed-in user hosts this room (may close it). */
   youAreHost: boolean
@@ -157,6 +168,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [problem, setProblem] = useState<Problem | null>(null)
   const [round, setRound] = useState<Round | null>(null)
+  const [solves, setSolves] = useState<SolveRank[]>([])
   const [youAreHost, setYouAreHost] = useState(false)
   const [closed, setClosed] = useState(false)
   const [hasMore, setHasMore] = useState(false)
@@ -178,6 +190,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     setParticipants([])
     setProblem(null)
     setRound(null)
+    setSolves([])
     setYouAreHost(false)
     setClosed(false)
     setHasMore(false)
@@ -196,6 +209,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       setMessages(state.messages)
       setProblem(state.problem)
       setRound(state.round)
+      setSolves(state.solves ?? [])
       // A full first page implies there may be older messages to page back to.
       setHasMore(state.messages.length >= HISTORY_PAGE)
     }
@@ -220,6 +234,12 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       if (p.roomId !== roomId) return
       setProblem(p.problem)
       setRound(p.round)
+      // A new round starts on a fresh problem — clear the finish-order medals.
+      // (The solving→review transition keeps the same problem, so leave them.)
+      if (p.round.phase === 'solving') setSolves([])
+    }
+    const onSolves = (p: { roomId: string; solves: SolveRank[] }) => {
+      if (p.roomId === roomId) setSolves(p.solves)
     }
     const onDisconnect = () => setConnected(false)
 
@@ -228,6 +248,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     s.on('chat:message', onMessage)
     s.on('presence:update', onPresence)
     s.on('room:problem', onProblem)
+    s.on('room:solves', onSolves)
     s.on('room:closed', onClosed)
     s.on('disconnect', onDisconnect)
 
@@ -239,6 +260,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
       s.off('chat:message', onMessage)
       s.off('presence:update', onPresence)
       s.off('room:problem', onProblem)
+      s.off('room:solves', onSolves)
       s.off('room:closed', onClosed)
       s.off('disconnect', onDisconnect)
     }
@@ -278,7 +300,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
   }, [])
 
   return {
-    connected, you, participants, messages, problem, round,
+    connected, you, participants, messages, problem, round, solves,
     sendMessage, youAreHost, closeRoom, closed, loadOlder, hasMore, loadingOlder,
   }
 }

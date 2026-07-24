@@ -244,6 +244,7 @@ export default function Room() {
     you,
     problem: liveProblem,
     round,
+    solves,
     connected,
     sendMessage: sendChat,
     youAreHost,
@@ -519,6 +520,13 @@ export default function Room() {
   const totalCount        = results?.length ?? 0
   const allPassed         = results !== null && passedCount === totalCount
 
+  // Finish-order medal for the current problem, by roster identity id. Only the
+  // top three solvers get a medal; everyone else (rank 4+) gets none.
+  const MEDALS = ['🥇', '🥈', '🥉']
+  const medalById = new Map(
+    solves.filter(s => s.rank <= MEDALS.length).map(s => [s.id, MEDALS[s.rank - 1]]),
+  )
+
   // "in the room" roster: real socket presence when connected, else fallback to you.
   const roster =
     liveParticipants.length > 0
@@ -528,6 +536,7 @@ export default function Room() {
           color: p.color,
           initials: toInitials(p.name),
           isYou: !!you && p.id === you.id,
+          medal: medalById.get(p.id),
         }))
       : [{
           id: ME_ID,
@@ -535,6 +544,7 @@ export default function Room() {
           color: '#3b6fb0',
           initials: 'RØ',
           isYou: true,
+          medal: undefined as string | undefined,
         }]
 
   const difficultyChip = liveProblem
@@ -947,6 +957,7 @@ export default function Room() {
                 <li key={p.id} className={`participant-row${p.isYou ? ' participant-you' : ''}`}>
                   <Avatar initials={p.initials} color={p.color} size={26} />
                   <span className="participant-name">{p.name}</span>
+                  {p.medal && <span className="participant-medal">{p.medal}</span>}
                 </li>
               ))}
             </ul>

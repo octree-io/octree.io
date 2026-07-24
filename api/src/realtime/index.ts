@@ -152,6 +152,22 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
       }
     });
 
+    // Leave the current room without dropping the socket — the client emits this
+    // when navigating away (e.g. back to the lobby). Mirrors the disconnect
+    // cleanup so a lingering socket doesn't keep the person's presence tab (and
+    // shared editor buffer) visible to everyone else.
+    socket.on("room:leave", () => {
+      const { roomId, identity } = socket.data;
+      if (!roomId) return;
+      removePresence(roomId, socket.id);
+      if (identity) roomCode.removeCode(roomId, identity.id);
+      socket.leave(roomId);
+      socket.data.roomId = undefined;
+      socket.data.identity = undefined;
+      io.to(roomId).emit("presence:update", { roomId, participants: listPresence(roomId) });
+      broadcastLobbyPresence(io, roomId);
+    });
+
     // Lobby directory: watch live occupancy of every room without joining any.
     socket.on("lobby:join", () => {
       socket.join(LOBBY_ROOM);

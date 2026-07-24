@@ -104,6 +104,9 @@ export interface ClientToServerEvents {
   "code:update": (p: CodeUpdatePayload) => void;
   // Host-only: end the current room and evict everyone.
   "room:close": () => void;
+  // Leave the current room (e.g. navigating back to the lobby) without
+  // disconnecting the socket, so presence and shared code are cleaned up.
+  "room:leave": () => void;
   // Load older messages (scroll-back pagination). Replies via ack callback.
   "chat:history": (p: HistoryPayload, cb: (res: HistoryResult) => void) => void;
   // Subscribe/unsubscribe to live occupancy of all rooms (the lobby directory).

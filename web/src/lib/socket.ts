@@ -92,6 +92,7 @@ interface ClientToServerEvents {
   'chat:send': (p: { body: string }) => void
   'code:update': (p: { lang: string; code: string }) => void
   'room:close': () => void
+  'room:leave': () => void
   'chat:history': (p: { before: number; limit?: number }, cb: (res: HistoryResult) => void) => void
   'lobby:join': () => void
   'lobby:leave': () => void
@@ -288,6 +289,9 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     if (s.connected) join()
 
     return () => {
+      // Tell the server we've left so our presence + shared code don't linger
+      // for others (Leave just navigates away; the socket stays connected).
+      if (s.connected) s.emit('room:leave')
       s.off('connect', join)
       s.off('room:state', onState)
       s.off('chat:message', onMessage)

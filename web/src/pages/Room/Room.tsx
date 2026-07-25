@@ -429,9 +429,8 @@ export default function Room() {
   }
 
   function timerClass() {
-    if (timeLeft > 10 * 60) return 'timer-green'
-    if (timeLeft > 5  * 60) return 'timer-yellow'
-    return 'timer-red'
+    if (timeLeft <= 60) return 'timer-red'
+    return ''
   }
 
   function switchLang(l: Lang) {

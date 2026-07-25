@@ -1107,3 +1107,90 @@ button.result-case:hover {
 }
 .chat-send:hover { opacity: 0.85; }
 .chat-send svg { stroke: currentColor; }
+
+/* ── confirm modal ── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 4, 8, 0.6);
+  backdrop-filter: blur(2px);
+}
+.confirm-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.confirm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1c1c26;
+}
+.confirm-head h2 {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0;
+}
+.confirm-close {
+  display: flex;
+  background: transparent;
+  border: none;
+  color: #7b7b9a;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.confirm-close:hover { background: #1e1e2c; color: #e2e2f0; }
+
+.confirm-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.confirm-text {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 20px 20px;
+}
+.confirm-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: #c7c7dd;
+  border-radius: 9px;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+}
+.confirm-btn-ghost:hover { background: #16161f; border-color: var(--muted); }
+.confirm-btn-danger {
+  padding: 9px 18px;
+  font-size: 13.5px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, opacity .12s ease;
+  background: var(--red);
+  border: 1px solid var(--red);
+  color: #fff;
+  font-weight: 600;
+}
+.confirm-btn-danger:hover { opacity: 0.88; }
+.confirm-btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }

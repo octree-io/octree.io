@@ -324,16 +324,26 @@ export default function Room() {
     setExpandedCustom(null)
   }, [problemDetail?.id])
 
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+
   // The room was closed (host action, or auto-closed when empty) — leave.
   useEffect(() => {
     if (closed) navigate('/lobby', { replace: true })
   }, [closed, navigate])
 
   function handleCloseRoom() {
-    if (window.confirm('Close this room for everyone? This ends the session.')) {
-      closeRoom()
-    }
+    setShowCloseConfirm(true)
   }
+
+  // Close the modal on Escape key.
+  useEffect(() => {
+    if (!showCloseConfirm) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setShowCloseConfirm(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [showCloseConfirm])
 
   /* resize — global listeners added once */
   useEffect(() => {
@@ -1144,6 +1154,36 @@ export default function Room() {
       {tsTooltip && createPortal(
         <div className="ts-tooltip" style={{ left: tsTooltip.x, top: tsTooltip.y }}>
           {tsTooltip.text}
+        </div>,
+        document.body,
+      )}
+
+      {showCloseConfirm && createPortal(
+        <div className="confirm-overlay" onClick={() => setShowCloseConfirm(false)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-head">
+              <h2>Close room</h2>
+              <button className="confirm-close" onClick={() => setShowCloseConfirm(false)} aria-label="Close">
+                <XIcon />
+              </button>
+            </div>
+            <div className="confirm-body">
+              <p className="confirm-text">
+                Close this room for everyone? This ends the session and no one else will be able to rejoin.
+              </p>
+            </div>
+            <div className="confirm-actions">
+              <button className="confirm-btn-ghost" onClick={() => setShowCloseConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className="confirm-btn-danger"
+                onClick={() => { setShowCloseConfirm(false); closeRoom() }}
+              >
+                Close room
+              </button>
+            </div>
+          </div>
         </div>,
         document.body,
       )}

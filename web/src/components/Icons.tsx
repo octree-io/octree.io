@@ -106,6 +106,15 @@ export function PlusIcon() {
   )
 }
 
+export function SkipIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <polygon points="5 4 15 12 5 20 5 4"/>
+      <rect x="17" y="4" width="2.5" height="16" rx="1"/>
+    </svg>
+  )
+}
+
 export function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .15s ease' }}>

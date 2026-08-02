@@ -104,6 +104,9 @@ export interface ClientToServerEvents {
   "code:update": (p: CodeUpdatePayload) => void;
   // Host-only: end the current room and evict everyone.
   "room:close": () => void;
+  // Host-only: end the current phase now instead of waiting for its deadline
+  // (solving → review, review → the next round).
+  "room:skip": () => void;
   // Leave the current room (e.g. navigating back to the lobby) without
   // disconnecting the socket, so presence and shared code are cleaned up.
   "room:leave": () => void;

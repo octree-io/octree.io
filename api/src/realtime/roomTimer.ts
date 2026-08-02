@@ -253,6 +253,27 @@ async function advance(io: RealtimeServer, roomKey: string): Promise<void> {
   arm(io, roomKey, endsAt - Date.now());
 }
 
+/**
+ * Host-initiated early advance: end the current phase now instead of waiting for
+ * its deadline. Solving → review (solutions unlock immediately), review → the
+ * next round on a fresh problem. Verifies the requester hosts the room. Returns
+ * the phase that was skipped, or null when the request wasn't allowed.
+ */
+export async function skipPhase(
+  io: RealtimeServer,
+  roomKey: string,
+  userId: number,
+): Promise<RoomPhase | null> {
+  const room = await loadRoom(roomKey);
+  if (!room || room.hostId !== userId || room.status !== "active") return null;
+
+  // Drop the pending timeout first so the natural deadline can't also fire and
+  // advance the room a second time.
+  stop(roomKey);
+  await advance(io, roomKey);
+  return room.phase;
+}
+
 // Cancel a room's pending phase timer, if any.
 export function stop(roomKey: string): void {
   const t = timers.get(roomKey);

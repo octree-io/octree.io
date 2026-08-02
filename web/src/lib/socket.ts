@@ -92,6 +92,7 @@ interface ClientToServerEvents {
   'chat:send': (p: { body: string }) => void
   'code:update': (p: { lang: string; code: string }) => void
   'room:close': () => void
+  'room:skip': () => void
   'room:leave': () => void
   'chat:history': (p: { before: number; limit?: number }, cb: (res: HistoryResult) => void) => void
   'lobby:join': () => void
@@ -157,6 +158,8 @@ export interface UseRoom {
   youAreHost: boolean
   /** Ask the server to close this room (host only). */
   closeRoom: () => void
+  /** End the current phase now — solving → review, review → next round (host only). */
+  skipPhase: () => void
   /** True once the room has been closed (by the host or auto-closed). */
   closed: boolean
   /** Load the next older page of messages (scroll-back pagination). */
@@ -313,6 +316,10 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
     getSocket().emit('room:close')
   }, [])
 
+  const skipPhase = useCallback(() => {
+    getSocket().emit('room:skip')
+  }, [])
+
   const sendCode = useCallback((lang: string, code: string) => {
     getSocket().emit('code:update', { lang, code })
   }, [])
@@ -343,7 +350,7 @@ export function useRoom(roomId: string | undefined, name?: string): UseRoom {
 
   return {
     connected, you, participants, messages, problem, round, solves, peerCode,
-    sendMessage, sendCode, youAreHost, closeRoom, closed, loadOlder, hasMore, loadingOlder,
+    sendMessage, sendCode, youAreHost, closeRoom, skipPhase, closed, loadOlder, hasMore, loadingOlder,
   }
 }
 

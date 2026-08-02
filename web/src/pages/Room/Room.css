@@ -104,6 +104,32 @@
 .btn-close-room:hover { color: #fff; border-color: var(--red); background: var(--red); }
 .btn-close-room svg { stroke: currentColor; }
 
+/* host-only: end the current phase early (solving → review, review → next round) */
+.btn-skip-round {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #c7c7dd;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.btn-skip-round:hover { color: #fff; border-color: var(--purple-dim); background: rgba(167,139,250,0.12); }
+.btn-skip-round svg { fill: currentColor; }
+/* everyone in the room has solved it — nudge the host to move on */
+.btn-skip-ready {
+  color: #c4b5fd;
+  border-color: rgba(167,139,250,0.5);
+  background: rgba(167,139,250,0.12);
+}
+.btn-skip-ready:hover { color: #fff; background: rgba(167,139,250,0.24); }
+
 /* ---------- body ---------- */
 .room-body {
   display: grid;
@@ -1192,5 +1218,17 @@ button.result-case:hover {
   color: #fff;
   font-weight: 600;
 }
+.confirm-btn-primary {
+  padding: 9px 18px;
+  font-size: 13.5px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: opacity .12s ease;
+  background: var(--purple);
+  border: 1px solid var(--purple);
+  color: #fff;
+  font-weight: 600;
+}
+.confirm-btn-primary:hover { opacity: 0.88; }
 .confirm-btn-danger:hover { opacity: 0.88; }
 .confirm-btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }

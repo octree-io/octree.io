@@ -92,6 +92,12 @@ function announce(roomId: number, body: string): void {
   io.to(slug).emit("chat:message", msg);
 }
 
+// Post an arbitrary system notice into a room's chat (e.g. the host skipping
+// ahead). Same rendering as the solve announcements.
+export function announceSystem(roomId: number, body: string): void {
+  announce(roomId, body);
+}
+
 // Announce a passing submit, ranked by finish order.
 export function announceSolve(roomId: number, solverName: string, rank: number): void {
   announce(

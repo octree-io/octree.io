@@ -5,7 +5,7 @@ import Editor, { type Monaco } from '@monaco-editor/react'
 import { BrandLink } from '../../components/Logo'
 import {
   SendIcon, PlayIcon, UploadIcon, LeaveIcon,
-  CheckIcon, XIcon, PlusIcon,
+  CheckIcon, XIcon, PlusIcon, SkipIcon,
 } from '../../components/Icons'
 import { useRoom, initials as toInitials, sameGroup, type ChatMessage } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
@@ -284,6 +284,7 @@ export default function Room() {
     sendCode,
     youAreHost,
     closeRoom,
+    skipPhase,
     closed,
   } = useRoom(roomId)
 
@@ -325,6 +326,9 @@ export default function Room() {
   }, [problemDetail?.id])
 
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  // Host-only "skip ahead" confirmation — only shown when people are still
+  // working (skipping once everyone has solved needs no warning).
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false)
 
   // The room was closed (host action, or auto-closed when empty) — leave.
   useEffect(() => {
@@ -335,15 +339,17 @@ export default function Room() {
     setShowCloseConfirm(true)
   }
 
-  // Close the modal on Escape key.
+  // Close whichever modal is open on Escape key.
   useEffect(() => {
-    if (!showCloseConfirm) return
+    if (!showCloseConfirm && !showSkipConfirm) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setShowCloseConfirm(false)
+      if (e.key !== 'Escape') return
+      setShowCloseConfirm(false)
+      setShowSkipConfirm(false)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [showCloseConfirm])
+  }, [showCloseConfirm, showSkipConfirm])
 
   /* resize — global listeners added once */
   useEffect(() => {
@@ -403,6 +409,12 @@ export default function Room() {
     setSubmitted(false)
     setViewingPeerId(null)
   }, [round?.number])
+
+  /* the phase moved on (on its own, or because someone else's skip landed) —
+     a pending skip confirmation no longer applies */
+  useEffect(() => {
+    setShowSkipConfirm(false)
+  }, [round?.number, round?.phase])
 
   /* share your buffer with the room, debounced so fast typing coalesces */
   useEffect(() => {
@@ -616,6 +628,28 @@ export default function Room() {
 
   const phase = round?.phase ?? 'solving'
 
+  // Everyone currently in the room has a solve recorded for this problem —
+  // there's nothing left to wait for, so the host can move on without warning.
+  const solvedIds = new Set(solves.map(s => s.id))
+  const everyoneSolved =
+    liveParticipants.length > 0 && liveParticipants.every(p => solvedIds.has(p.id))
+
+  // In review the skip just starts the next round; while solving it cuts
+  // everyone's remaining time short, so it's confirmed unless everyone's done.
+  const skipLabel = phase === 'review'
+    ? 'Next round'
+    : everyoneSolved ? 'Everyone’s done — next round' : 'Skip round'
+  const skipHint = phase === 'review'
+    ? 'Start the next round now'
+    : everyoneSolved
+      ? 'Everyone in the room has solved it — unlock solutions and move on'
+      : 'End this round now, even though people are still solving'
+
+  function handleSkip() {
+    if (phase === 'review' || everyoneSolved) skipPhase()
+    else setShowSkipConfirm(true)
+  }
+
   // Editor tabs: you first, then everyone else in the room. A peer tab shows
   // their shared buffer read-only — a scrambled decoy while solving, the real
   // code once the round is in review.
@@ -642,6 +676,17 @@ export default function Room() {
         </div>
 
         <div className="topbar-right">
+          {youAreHost && (
+            <button
+              type="button"
+              className={`btn-skip-round${everyoneSolved && phase === 'solving' ? ' btn-skip-ready' : ''}`}
+              onClick={handleSkip}
+              title={skipHint}
+            >
+              <SkipIcon />
+              {skipLabel}
+            </button>
+          )}
           {youAreHost && (
             <button type="button" className="btn-close-room" onClick={handleCloseRoom}>
               <XIcon />
@@ -1153,6 +1198,37 @@ export default function Room() {
       {tsTooltip && createPortal(
         <div className="ts-tooltip" style={{ left: tsTooltip.x, top: tsTooltip.y }}>
           {tsTooltip.text}
+        </div>,
+        document.body,
+      )}
+
+      {showSkipConfirm && createPortal(
+        <div className="confirm-overlay" onClick={() => setShowSkipConfirm(false)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-head">
+              <h2>Skip round</h2>
+              <button className="confirm-close" onClick={() => setShowSkipConfirm(false)} aria-label="Close">
+                <XIcon />
+              </button>
+            </div>
+            <div className="confirm-body">
+              <p className="confirm-text">
+                Not everyone has solved this problem yet. Ending the round now stops the
+                clock for everyone and unlocks all solutions for review.
+              </p>
+            </div>
+            <div className="confirm-actions">
+              <button className="confirm-btn-ghost" onClick={() => setShowSkipConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className="confirm-btn-primary"
+                onClick={() => { setShowSkipConfirm(false); skipPhase() }}
+              >
+                End round
+              </button>
+            </div>
+          </div>
         </div>,
         document.body,
       )}

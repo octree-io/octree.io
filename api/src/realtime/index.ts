@@ -17,7 +17,7 @@ import {
 import { isChannelId } from "../lib/channels.js";
 import * as roomTimer from "./roomTimer.js";
 import { setIo } from "./broadcast.js";
-import { listSolves } from "./roomSolves.js";
+import { listSolves, announceSystem } from "./roomSolves.js";
 import * as roomCode from "./roomCode.js";
 import { resolveRoomId } from "../lib/roomSlug.js";
 import type {
@@ -149,6 +149,30 @@ export function createRealtime(httpServer: HttpServer): RealtimeServer {
         if (closed) io.to(roomId).emit("room:closed", { roomId });
       } catch (err) {
         console.error("[realtime] room:close failed:", err);
+      }
+    });
+
+    // Host-only: cut the current phase short (solving → review, review → the
+    // next round) rather than waiting for its deadline.
+    socket.on("room:skip", async () => {
+      const roomId = socket.data.roomId;
+      const user = socket.data.user;
+      const identity = socket.data.identity;
+      if (!roomId || !user) return;
+      try {
+        const skipped = await roomTimer.skipPhase(io, roomId, user.id);
+        if (!skipped) return;
+        const numericRoomId = resolveRoomId(roomId);
+        if (numericRoomId !== null) {
+          announceSystem(
+            numericRoomId,
+            skipped === "solving"
+              ? `⏭ ${identity?.name ?? "the host"} ended the round early — solutions are unlocked.`
+              : `⏭ ${identity?.name ?? "the host"} started the next round early.`,
+          );
+        }
+      } catch (err) {
+        console.error("[realtime] room:skip failed:", err);
       }
     });
 

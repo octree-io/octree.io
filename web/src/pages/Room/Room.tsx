@@ -58,6 +58,10 @@ const MONACO_LANG: Record<Lang, string> = {
 // coalesce fast typing, short enough to feel live.
 const CODE_SYNC_MS = 300
 
+// Tallest the chat composer grows to before it starts scrolling internally
+// (~5 lines at the composer's font size), matching the Instagram-style box.
+const CHAT_INPUT_MAX_H = 108
+
 // Shared Monaco options for both your editable buffer and the read-only peer
 // views, so a peer's code renders with the same look as your own.
 const BASE_EDITOR_OPTIONS = {
@@ -294,6 +298,7 @@ export default function Room() {
 
   const navigate = useNavigate()
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
 
   // Pull the problem's name + description from the API (keyed by the slug the
   // round assigns over the socket). Kept separate from the socket payload so the
@@ -433,6 +438,16 @@ export default function Room() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
+
+  /* grow the composer with its content: reset to one line, then take the
+     content height up to the cap — past that it keeps its size and scrolls */
+  useEffect(() => {
+    const el = chatInputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, CHAT_INPUT_MAX_H)}px`
+    el.classList.toggle('chat-input-scroll', el.scrollHeight > CHAT_INPUT_MAX_H)
+  }, [chatInput])
 
   function fmtTime(s: number) {
     const m   = Math.floor(s / 60).toString().padStart(2, '0')
@@ -1181,11 +1196,20 @@ export default function Room() {
               <div ref={chatEndRef} />
             </div>
             <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendMessage() }}>
-              <input
+              <textarea
+                ref={chatInputRef}
                 className="chat-input"
+                rows={1}
                 placeholder={connected ? 'message…' : 'connecting…'}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
+                // Enter sends; Shift+Enter (or IME composition) inserts a newline.
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault()
+                    sendMessage()
+                  }
+                }}
               />
               <button type="submit" className="chat-send" aria-label="Send">
                 <SendIcon />

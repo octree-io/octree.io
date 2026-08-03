@@ -1020,7 +1020,7 @@ button.result-case:hover {
 
 .chat-msg-gutter {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   flex-shrink: 0;
   width: 36px;
@@ -1053,7 +1053,8 @@ button.result-case:hover {
 }
 .chat-text {
   color: var(--text); line-height: 1.45;
-  white-space: normal;
+  /* multi-line messages (Shift+Enter in the composer) keep their line breaks */
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
@@ -1100,8 +1101,12 @@ button.result-case:hover {
   z-index: -1;
 }
 
-.chat-input-row { display: flex; gap: 6px; flex-shrink: 0; }
+/* the send button sits at the bottom of the row so it stays put as the
+   textarea grows upward */
+.chat-input-row { display: flex; gap: 6px; flex-shrink: 0; align-items: flex-end; }
 
+/* Auto-growing composer: starts one line tall and expands with the content up
+   to CHAT_INPUT_MAX_H (see Room.tsx), after which it scrolls internally. */
 .chat-input {
   flex: 1;
   background: var(--surface2);
@@ -1109,12 +1114,20 @@ button.result-case:hover {
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 0.84rem;
+  line-height: 1.4;
   color: var(--text);
   outline: none;
   transition: border-color 0.2s;
   font-family: inherit;
   min-width: 0;
+  resize: none;
+  overflow-y: hidden; /* flipped to auto once the max height is reached */
+  display: block;
 }
+.chat-input.chat-input-scroll { overflow-y: auto; }
+.chat-input::-webkit-scrollbar { width: 5px; }
+.chat-input::-webkit-scrollbar-thumb { background: #2a2a3d80; border-radius: 3px; }
+.chat-input::-webkit-scrollbar-thumb:hover { background: #3a3a5c; }
 .chat-input::placeholder { color: var(--muted); }
 .chat-input:focus { border-color: var(--purple-dim); }
 

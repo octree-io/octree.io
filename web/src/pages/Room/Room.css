@@ -277,6 +277,106 @@
   width: 60px;
 }
 
+/* ---------- problem / solution tabs (solution only exists in review) ------- */
+.problem-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 18px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.problem-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 10px;
+  margin-bottom: -1px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.problem-tab:hover { color: var(--text); }
+.problem-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--purple);
+}
+
+/* ---------- reference solution (review phase, spoiler-gated) ---------- */
+.solution-block {
+  padding: 14px 18px 24px;
+}
+.solution-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.solution-title { margin-bottom: 8px; }
+.solution-toggle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--purple);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.solution-toggle:hover { border-color: var(--purple-dim); }
+
+.solution-spoiler {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface2);
+}
+.solution-spoiler:not(.solution-open) { cursor: pointer; }
+.solution-spoiler:not(.solution-open) .solution-code {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+.solution-spoiler:focus-visible { outline: 2px solid var(--purple-dim); outline-offset: 2px; }
+
+/* Monaco needs an explicitly sized box; the editor scrolls inside it. The
+   background matches the 'octree' theme's editor.background so the rounded
+   corners don't show a seam. */
+.solution-code {
+  height: 380px;
+  background: #0f0f14;
+}
+.solution-code > section,
+.solution-code > div { height: 100% !important; }
+
+.solution-veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 8px;
+  background: color-mix(in srgb, var(--surface2) 55%, transparent);
+}
+.solution-veil-icon { font-size: 1.1rem; }
+.solution-veil-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.solution-error {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .constraints {
   padding-left: 18px;
   display: flex;

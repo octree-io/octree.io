@@ -43,3 +43,19 @@ export function createRoom(body: {
 }): Promise<Room> {
   return json<Room>('/rooms', { method: 'POST', body: JSON.stringify(body) })
 }
+
+/** The reference (Python) solution for a room's current problem. */
+export interface RoomSolution {
+  problemId: number
+  slug: string
+  solution: string | null
+}
+
+/**
+ * Fetch the reference solution for the room's current problem. The server only
+ * serves this while the room is in its review phase — it rejects the request
+ * during solving, so there's nothing to fetch early.
+ */
+export function fetchRoomSolution(roomId: string): Promise<RoomSolution> {
+  return json<RoomSolution>(`/rooms/${encodeURIComponent(roomId)}/solution`)
+}

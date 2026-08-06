@@ -57,6 +57,32 @@ roomsRouter.get("/:id", async (req, res, next) => {
   }
 });
 
+// GET /rooms/:id/solution — the reference solution for the room's current
+// problem. Gated on the room actually being in its review window: while people
+// are solving there's nothing to fetch, so the answer can't be pulled out of
+// the network tab mid-round.
+roomsRouter.get("/:id/solution", async (req, res, next) => {
+  try {
+    const room = await db.query.rooms.findFirst({
+      where: eq(rooms.id, parseId(req.params.id)),
+      columns: { id: true, phase: true, problemId: true },
+    });
+    if (!room) throw new ApiError(404, "Room not found");
+    if (room.phase !== "review") throw new ApiError(403, "Solutions unlock during review");
+    if (room.problemId === null) throw new ApiError(404, "Room has no problem");
+
+    const problem = await db.query.problems.findFirst({
+      where: eq(problems.id, room.problemId),
+      columns: { id: true, slug: true, solution: true },
+    });
+    if (!problem) throw new ApiError(404, "Problem not found");
+
+    res.json({ problemId: problem.id, slug: problem.slug, solution: problem.solution });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /rooms
 const createRoomSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(60),

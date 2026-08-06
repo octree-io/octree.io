@@ -9,6 +9,7 @@ import {
 } from '../../components/Icons'
 import { useRoom, initials as toInitials, sameGroup, type ChatMessage } from '../../lib/socket'
 import { fetchProblem, type ProblemDetail } from '../../lib/problems'
+import { fetchRoomSolution } from '../../lib/rooms'
 import { runSolution, type Submission } from '../../lib/submissions'
 import { useAuth } from '../../lib/AuthContext'
 import './Room.css'
@@ -321,6 +322,40 @@ export default function Room() {
   }, [problemDetail])
 
   const paramNames = problemDetail?.paramNames ?? []
+
+  /* the problem's reference Python solution. The API only serves it while the
+     room is in review, so this stays null (and the panel stays hidden) for the
+     whole solving phase. */
+  const [refSolution,   setRefSolution]   = useState<string | null>(null)
+  const [refSolutionErr, setRefSolutionErr] = useState(false)
+  /* spoiler state — the solution is blurred until you deliberately reveal it */
+  const [solutionShown, setSolutionShown] = useState(false)
+  /* which tab the left panel shows. The Solution tab only exists in review. */
+  const [problemTab, setProblemTab] = useState<'problem' | 'solution'>('problem')
+
+  useEffect(() => {
+    if (!roomId || round?.phase !== 'review') {
+      setRefSolution(null)
+      setRefSolutionErr(false)
+      return
+    }
+    let alive = true
+    fetchRoomSolution(roomId)
+      .then(r => { if (alive) { setRefSolution(r.solution); setRefSolutionErr(false) } })
+      .catch(() => { if (alive) { setRefSolution(null); setRefSolutionErr(true) } })
+    return () => { alive = false }
+  }, [roomId, round?.phase, round?.number, liveProblem?.slug])
+
+  /* a new round (or problem) hides the spoiler and drops back to the problem */
+  useEffect(() => {
+    setSolutionShown(false)
+    setProblemTab('problem')
+  }, [round?.number, liveProblem?.slug])
+
+  /* the round left review — the Solution tab is gone, so show the problem */
+  useEffect(() => {
+    if (round?.phase !== 'review') setProblemTab('problem')
+  }, [round?.phase])
 
   // A new problem means old custom test cases don't apply anymore.
   useEffect(() => {
@@ -643,6 +678,10 @@ export default function Room() {
 
   const phase = round?.phase ?? 'solving'
 
+  // The Solution tab shows up only in review, and only once we have something
+  // to put in it (the fetched solution, or the error explaining its absence).
+  const solutionTabOpen = phase === 'review' && (!!refSolution || refSolutionErr)
+
   // Everyone currently in the room has a solve recorded for this problem —
   // there's nothing left to wait for, so the host can move on without warning.
   const solvedIds = new Set(solves.map(s => s.id))
@@ -731,11 +770,101 @@ export default function Room() {
                   {liveProblem.difficulty[0].toUpperCase() + liveProblem.difficulty.slice(1)}
                 </span>
               </div>
-              {/* Imported descriptions are HTML — render them as markup. */}
-              <div
-                className="problem-content problem-html"
-                dangerouslySetInnerHTML={{ __html: problemDetail?.description ?? liveProblem.description }}
-              />
+              {/* Problem / Solution tabs — the solution tab only exists during
+                  review, when the server will actually serve the answer. */}
+              {solutionTabOpen && (
+                <div className="problem-tabs" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={problemTab === 'problem'}
+                    className={`problem-tab${problemTab === 'problem' ? ' active' : ''}`}
+                    onClick={() => setProblemTab('problem')}
+                  >
+                    Problem
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={problemTab === 'solution'}
+                    className={`problem-tab${problemTab === 'solution' ? ' active' : ''}`}
+                    onClick={() => setProblemTab('solution')}
+                  >
+                    Solution
+                  </button>
+                </div>
+              )}
+
+              {problemTab === 'solution' && solutionTabOpen ? (
+                /* the answer stays behind a spoiler — opening the tab alone
+                   shouldn't spoil it for someone still thinking it through */
+                <div className="solution-block">
+                  <div className="solution-head">
+                    <h3 className="problem-section solution-title">Reference solution</h3>
+                    {refSolution && (
+                      <button
+                        type="button"
+                        className="solution-toggle"
+                        onClick={() => setSolutionShown(s => !s)}
+                      >
+                        {solutionShown ? 'Hide' : 'Reveal'}
+                      </button>
+                    )}
+                  </div>
+
+                  {refSolutionErr ? (
+                    <p className="solution-error">Couldn’t load the reference solution.</p>
+                  ) : (
+                    <div
+                      className={`solution-spoiler${solutionShown ? ' solution-open' : ''}`}
+                      role={solutionShown ? undefined : 'button'}
+                      tabIndex={solutionShown ? -1 : 0}
+                      onClick={() => { if (!solutionShown) setSolutionShown(true) }}
+                      onKeyDown={e => {
+                        if (solutionShown || (e.key !== 'Enter' && e.key !== ' ')) return
+                        e.preventDefault()
+                        setSolutionShown(true)
+                      }}
+                    >
+                      {/* Monaco (read-only) rather than a <pre>, so the
+                          solution is highlighted with the same theme as the
+                          editor above it. */}
+                      <div className="solution-code">
+                        <Editor
+                          language={MONACO_LANG.python}
+                          value={refSolution ?? ''}
+                          theme="octree"
+                          beforeMount={setupTheme}
+                          options={{
+                            ...BASE_EDITOR_OPTIONS,
+                            readOnly: true,
+                            domReadOnly: true,
+                            fontSize: 12,
+                            lineNumbers: 'off',
+                            folding: false,
+                            glyphMargin: false,
+                            lineDecorationsWidth: 0,
+                            lineNumbersMinChars: 0,
+                            padding: { top: 10, bottom: 10 },
+                          }}
+                        />
+                      </div>
+                      {!solutionShown && (
+                        <div className="solution-veil">
+                          <span className="solution-veil-icon">🙈</span>
+                          <span className="solution-veil-text">Click to reveal the Python solution</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Imported descriptions are HTML — render them as markup. */
+                <div
+                  className="problem-content problem-html"
+                  dangerouslySetInnerHTML={{ __html: problemDetail?.description ?? liveProblem.description }}
+                />
+              )}
             </>
           ) : (
           <>
